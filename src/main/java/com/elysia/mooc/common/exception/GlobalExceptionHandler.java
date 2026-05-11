@@ -46,6 +46,7 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException.class
     })
     public ApiResult<Map<String, List<ValidationErrorItem>>> handleParamException(Exception ex) {
+        // 先提取字段级错误明细，再优先返回首个中文提示，方便前端直接展示。
         List<ValidationErrorItem> errors = extractValidationErrors(ex);
         String message = errors.isEmpty()
                 ? CommonErrorCode.PARAM_INVALID.message()
@@ -77,6 +78,7 @@ public class GlobalExceptionHandler {
     private List<ValidationErrorItem> extractValidationErrors(Exception ex) {
         List<ValidationErrorItem> errors = new ArrayList<>();
 
+        // 按异常类型分别提取字段级错误，统一收敛为前端可直接展示的错误列表。
         if (ex instanceof MethodArgumentNotValidException argumentException) {
             argumentException.getBindingResult().getFieldErrors().forEach(fieldError -> errors.add(
                     new ValidationErrorItem(fieldError.getField(), fieldError.getDefaultMessage())));

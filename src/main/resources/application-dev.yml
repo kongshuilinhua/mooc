@@ -35,6 +35,11 @@ mybatis-plus:
       logic-not-delete-value: 0
 
 mooc:
+  auth:
+    jwt:
+      secret: ${JWT_SECRET:mooc-dev-secret-change-me-change-me-123456}
+      access-token-minutes: ${JWT_ACCESS_TOKEN_MINUTES:120}
+      refresh-token-days: ${JWT_REFRESH_TOKEN_DAYS:7}
   qdrant:
     url: ${QDRANT_URL:http://192.168.150.101:6333}
     collection: ${QDRANT_COLLECTION:mooc_knowledge}

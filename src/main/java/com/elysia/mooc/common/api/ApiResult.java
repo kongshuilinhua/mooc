@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ApiResult<T> {
 
-    /** 业务状态码。 */
+    /** 业务状态码：200 表示成功。*/
     private Integer code;
 
     /** 中文响应提示。 */

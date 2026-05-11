@@ -11,11 +11,11 @@ import lombok.Data;
 public class PageQuery {
 
     /** 页码，从 1 开始。 */
-    @Min(value = 1, message = "页码不能小于 1")
+    @Min(value = 1, message = "页码不能小于1")
     private Integer pageNo = 1;
 
     /** 每页数量，默认 10，最大 100。 */
-    @Min(value = 1, message = "每页数量不能小于 1")
-    @Max(value = 100, message = "每页数量不能大于 100")
+    @Min(value = 1, message = "每页数量不能小于1")
+    @Max(value = 100, message = "每页数量不能大于100")
     private Integer pageSize = 10;
 }

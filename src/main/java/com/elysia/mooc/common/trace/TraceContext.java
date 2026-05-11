@@ -8,9 +8,6 @@ public final class TraceContext {
     /** 当前线程保存的 traceId。 */
     private static final ThreadLocal<String> TRACE_ID = new ThreadLocal<>();
 
-    /**
-     * 工具类禁止实例化。
-     */
     private TraceContext() {
     }
 

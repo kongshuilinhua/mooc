@@ -38,6 +38,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
         String traceId = request.getHeader(TRACE_ID_HEADER);
+
         if (!StringUtils.hasText(traceId)) {
             traceId = UUID.randomUUID().toString().replace("-", "");
         }
