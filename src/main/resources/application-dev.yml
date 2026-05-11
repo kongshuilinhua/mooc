@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://192.168.150.101:3306/mooc?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:mooc}
+    password: ${DB_PASSWORD:1234}
+    hikari:
+      initialization-fail-timeout: -1
+
+  data:
+    redis:
+      host: ${REDIS_HOST:192.168.150.101}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:1234}
+      database: ${REDIS_DATABASE:0}
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:192.168.150.101:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:mooc-dev}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+mooc:
+  qdrant:
+    url: ${QDRANT_URL:http://192.168.150.101:6333}
+    collection: ${QDRANT_COLLECTION:mooc_knowledge}
+    vector-size: ${QDRANT_VECTOR_SIZE:1024}
