@@ -1,8 +1,12 @@
 package com.elysia.mooc.auth.domain.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.elysia.mooc.common.enums.ClientType;
+import com.elysia.mooc.common.enums.TokenRevokedStatus;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,12 +22,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @TableName("auth_refresh_token")
 public class AuthRefreshTokenPO {
-
-    /** 未撤销。 */
-    public static final int REVOKED_NO = 0;
-
-    /** 已撤销。 */
-    public static final int REVOKED_YES = 1;
 
     /** 未删除。 */
     public static final int DELETED_NO = 0;
@@ -42,27 +40,31 @@ public class AuthRefreshTokenPO {
     private String deviceId;
 
     /** 客户端类型。 */
-    private String clientType;
+    private ClientType clientType;
 
     /** 过期时间。 */
     private LocalDateTime expireTime;
 
     /** 是否撤销：0 有效，1 已撤销。 */
-    private Integer revoked;
+    private TokenRevokedStatus revoked;
 
     /** 撤销时间。 */
     private LocalDateTime revokedTime;
 
     /** 创建时间。 */
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
     /** 更新时间。 */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
     /** 创建人 ID。 */
+    @TableField(fill = FieldFill.INSERT)
     private Long createBy;
 
     /** 更新人 ID。 */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private Long updateBy;
 
     /** 逻辑删除标记：0 正常，1 删除。 */
@@ -75,7 +77,7 @@ public class AuthRefreshTokenPO {
             Long userId,
             String tokenHash,
             String deviceId,
-            String clientType,
+            ClientType clientType,
             LocalDateTime expireTime) {
         return AuthRefreshTokenPO.builder()
                 .userId(userId)
@@ -83,7 +85,7 @@ public class AuthRefreshTokenPO {
                 .deviceId(deviceId)
                 .clientType(clientType)
                 .expireTime(expireTime)
-                .revoked(REVOKED_NO)
+                .revoked(TokenRevokedStatus.VALID)
                 .deleted(DELETED_NO)
                 .build();
     }
@@ -92,7 +94,7 @@ public class AuthRefreshTokenPO {
      * 撤销刷新令牌。
      */
     public void revoke() {
-        this.revoked = REVOKED_YES;
+        this.revoked = TokenRevokedStatus.REVOKED;
         this.revokedTime = LocalDateTime.now();
     }
 
@@ -101,7 +103,7 @@ public class AuthRefreshTokenPO {
      */
     public boolean isActive() {
         return DELETED_NO == this.deleted
-                && REVOKED_NO == this.revoked
+                && TokenRevokedStatus.VALID == this.revoked
                 && this.expireTime != null
                 && this.expireTime.isAfter(LocalDateTime.now());
     }

@@ -1,5 +1,7 @@
 package com.elysia.mooc.auth.security;
 
+import java.util.Collections;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,9 +14,19 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginUser {
 
-    /** 用户 ID。 */
+    /** 用户 ID */
     private Long userId;
 
-    /** 登录用户名。 */
+    /** 登录用户名 */
     private String username;
+
+    /** 角色编码列表 */
+    private List<String> roles;
+
+    /** 权限编码列表 */
+    private List<String> permissions;
+
+    public LoginUser(Long userId, String username) {
+        this(userId, username, Collections.emptyList(), Collections.emptyList());
+    }
 }

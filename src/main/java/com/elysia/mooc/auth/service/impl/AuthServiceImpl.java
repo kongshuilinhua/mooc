@@ -18,9 +18,14 @@ import com.elysia.mooc.auth.service.AuthService;
 import com.elysia.mooc.auth.service.UserContextService;
 import com.elysia.mooc.auth.util.JwtTokenProvider;
 import com.elysia.mooc.common.exception.BizException;
+import com.elysia.mooc.common.enums.ClientType;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import com.elysia.mooc.rbac.service.RbacService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -41,6 +46,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserContextService userContextService;
+    private final RbacService rbacService;
 
     /**
      * 注册用户并返回用户基础信息。
@@ -74,7 +80,7 @@ public class AuthServiceImpl implements AuthService {
     /**
      * 校验账号密码并签发 accessToken 和 refreshToken。
      *
-     * @param request 登录请求
+     * @param request  登录请求
      * @param clientIp 客户端 IP
      * @return 登录结果
      */
@@ -86,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
         if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new BizException(AuthErrorCode.AUTH_BAD_CREDENTIALS);
         }
-        if (SysUserPO.STATUS_DISABLED == user.getStatus()) {
+        if (!user.isAvailable()) {
             throw new BizException(AuthErrorCode.AUTH_USER_DISABLED);
         }
 
@@ -123,7 +129,7 @@ public class AuthServiceImpl implements AuthService {
         if (!isUserAvailable(user)) {
             throw new BizException(AuthErrorCode.AUTH_REFRESH_TOKEN_INVALID);
         }
-        
+
         // 追加设备校验，防止 refreshToken 被恶意迁移使用
         if (StringUtils.hasText(request.getDeviceId()) && StringUtils.hasText(oldToken.getDeviceId())) {
             if (!request.getDeviceId().equals(oldToken.getDeviceId())) {
@@ -264,17 +270,17 @@ public class AuthServiceImpl implements AuthService {
     /**
      * 保存 refreshToken 摘要记录。
      *
-     * @param userId 用户 ID
+     * @param userId       用户 ID
      * @param refreshToken refreshToken 明文
-     * @param deviceId 设备标识
-     * @param clientType 客户端类型
+     * @param deviceId     设备标识
+     * @param clientType   客户端类型
      */
-    private void saveRefreshToken(Long userId, String refreshToken, String deviceId, String clientType) {
+    private void saveRefreshToken(Long userId, String refreshToken, String deviceId, Object clientType) {
         AuthRefreshTokenPO token = AuthRefreshTokenPO.issue(
                 userId,
                 jwtTokenProvider.hashToken(refreshToken),
                 normalizeBlank(deviceId),
-                StringUtils.hasText(clientType) ? clientType.trim() : "web",
+                ClientType.ofOrDefault(clientType, ClientType.WEB),
                 LocalDateTime.ofInstant(jwtTokenProvider.refreshTokenExpireAt(), ZoneId.systemDefault()));
         refreshTokenMapper.insert(token);
     }
@@ -306,13 +312,17 @@ public class AuthServiceImpl implements AuthService {
      * @return 当前用户视图对象
      */
     private CurrentUserVO toCurrentUser(SysUserPO user) {
+        Map<String, List<String>> rbac = rbacService.loadUserRolesAndPermissions(user.getId());
+        List<String> roles = rbac.getOrDefault("roles", Collections.emptyList());
+        List<String> permissions = rbac.getOrDefault("permissions", Collections.emptyList());
+
         return CurrentUserVO.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .nickname(user.getNickname())
                 .avatar(user.getAvatar())
-                .roles(Collections.emptyList())
-                .permissions(Collections.emptyList())
+                .roles(roles)
+                .permissions(permissions)
                 .build();
     }
 

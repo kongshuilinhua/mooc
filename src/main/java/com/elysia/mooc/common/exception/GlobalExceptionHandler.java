@@ -8,8 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -43,7 +45,9 @@ public class GlobalExceptionHandler {
             MethodArgumentNotValidException.class,
             BindException.class,
             ConstraintViolationException.class,
-            HttpMessageNotReadableException.class
+            HttpMessageNotReadableException.class,
+            MethodArgumentTypeMismatchException.class,
+            ConversionFailedException.class
     })
     public ApiResult<Map<String, List<ValidationErrorItem>>> handleParamException(Exception ex) {
         // 先提取字段级错误明细，再优先返回首个中文提示，方便前端直接展示。
@@ -101,8 +105,18 @@ public class GlobalExceptionHandler {
             return errors;
         }
 
+        if (ex instanceof MethodArgumentTypeMismatchException mismatchException) {
+            errors.add(new ValidationErrorItem(mismatchException.getName(), "参数类型错误或枚举值不合法"));
+            return errors;
+        }
+
+        if (ex instanceof ConversionFailedException) {
+            errors.add(new ValidationErrorItem("请求", "参数类型错误或枚举值不合法"));
+            return errors;
+        }
+
         if (ex instanceof HttpMessageNotReadableException) {
-            errors.add(new ValidationErrorItem("请求", "请求体格式错误"));
+            errors.add(new ValidationErrorItem("请求", "请求体格式错误或枚举值不合法"));
         }
         return errors;
     }

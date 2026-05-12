@@ -1,8 +1,11 @@
 package com.elysia.mooc.auth.domain.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.elysia.mooc.common.enums.EnableStatus;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,12 +21,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @TableName("sys_user")
 public class SysUserPO {
-
-    /** 正常状态。 */
-    public static final int STATUS_ENABLED = 1;
-
-    /** 禁用状态。 */
-    public static final int STATUS_DISABLED = 0;
 
     /** 未删除。 */
     public static final int DELETED_NO = 0;
@@ -50,8 +47,8 @@ public class SysUserPO {
     /** 手机号。 */
     private String phone;
 
-    /** 状态：0 禁用，1 正常。 */
-    private Integer status;
+    /** 状态：0 禁用，1 启用。 */
+    private EnableStatus status;
 
     /** 最近登录时间。 */
     private LocalDateTime lastLoginTime;
@@ -60,15 +57,19 @@ public class SysUserPO {
     private String lastLoginIp;
 
     /** 创建时间。 */
+    @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
     /** 更新时间。 */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
 
     /** 创建人 ID。 */
+    @TableField(fill = FieldFill.INSERT)
     private Long createBy;
 
     /** 更新人 ID。 */
+    @TableField(fill = FieldFill.INSERT_UPDATE)
     private Long updateBy;
 
     /** 逻辑删除标记：0 正常，1 删除。 */
@@ -89,7 +90,7 @@ public class SysUserPO {
                 .nickname(nickname)
                 .email(email)
                 .phone(phone)
-                .status(STATUS_ENABLED)
+                .status(EnableStatus.ENABLED)
                 .deleted(DELETED_NO)
                 .build();
     }
@@ -106,6 +107,6 @@ public class SysUserPO {
      * 判断账号是否可用。
      */
     public boolean isAvailable() {
-        return DELETED_NO == this.deleted && STATUS_ENABLED == this.status;
+        return DELETED_NO == this.deleted && EnableStatus.ENABLED == this.status;
     }
 }

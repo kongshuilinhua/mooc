@@ -15,7 +15,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ApiResult<T> {
 
-    /** 业务状态码：200 表示成功。*/
+    /** 业务状态码：200 表示成功。 */
     private Integer code;
 
     /** 中文响应提示。 */
@@ -31,7 +31,7 @@ public class ApiResult<T> {
      * 构造成功响应。
      *
      * @param data 响应数据
-     * @param <T> 响应数据类型
+     * @param <T>  响应数据类型
      * @return 统一成功响应
      */
     public static <T> ApiResult<T> ok(T data) {
@@ -42,7 +42,7 @@ public class ApiResult<T> {
      * 构造异步任务已受理响应。
      *
      * @param data 任务受理结果
-     * @param <T> 响应数据类型
+     * @param <T>  响应数据类型
      * @return 统一异步受理响应
      */
     public static <T> ApiResult<T> accepted(T data) {
@@ -52,9 +52,9 @@ public class ApiResult<T> {
     /**
      * 构造失败响应。
      *
-     * @param code 错误码
+     * @param code    错误码
      * @param message 中文错误提示
-     * @param <T> 响应数据类型
+     * @param <T>     响应数据类型
      * @return 统一失败响应
      */
     public static <T> ApiResult<T> fail(Integer code, String message) {
@@ -64,10 +64,10 @@ public class ApiResult<T> {
     /**
      * 构造带错误明细的失败响应。
      *
-     * @param code 错误码
+     * @param code    错误码
      * @param message 中文错误提示
-     * @param data 错误明细
-     * @param <T> 响应数据类型
+     * @param data    错误明细
+     * @param <T>     响应数据类型
      * @return 统一失败响应
      */
     public static <T> ApiResult<T> fail(Integer code, String message, T data) {

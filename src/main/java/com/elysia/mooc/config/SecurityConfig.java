@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
@@ -26,6 +27,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * Spring Security 配置，使用 JWT 保护登录态接口。
  */
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
         /**
@@ -62,6 +64,8 @@ public class SecurityConfig {
                                                                 "/api/auth/login",
                                                                 "/api/auth/tokens/refresh")
                                                 .permitAll()
+                                                // 管理端接口先在过滤链做角色拦截，确保普通学生返回 HTTP 403。
+                                                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                 .anyRequest().authenticated())
                                 .exceptionHandling(exception -> exception
                                                 .authenticationEntryPoint((request, response,
