@@ -40,11 +40,39 @@ public final class BeanCopyUtils {
             return null;
         }
         T target = BeanUtils.instantiateClass(clazz);
+        copyProperties(source, target, converter);
+        return target;
+    }
+
+    /**
+     * 将原对象属性复制到已有目标对象。
+     *
+     * @param source 原对象
+     * @param target 目标对象
+     * @param <S>    原对象类型
+     * @param <T>    目标对象类型
+     */
+    public static <S, T> void copyProperties(S source, T target) {
+        copyProperties(source, target, null);
+    }
+
+    /**
+     * 将原对象属性复制到已有目标对象，并允许补充自定义转换。
+     *
+     * @param source    原对象
+     * @param target    目标对象
+     * @param converter 自定义转换回调
+     * @param <S>       原对象类型
+     * @param <T>       目标对象类型
+     */
+    public static <S, T> void copyProperties(S source, T target, BiConsumer<S, T> converter) {
+        if (source == null || target == null) {
+            return;
+        }
         BeanUtils.copyProperties(source, target);
         if (converter != null) {
             converter.accept(source, target);
         }
-        return target;
     }
 
     /**

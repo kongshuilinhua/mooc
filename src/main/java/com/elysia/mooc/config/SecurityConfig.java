@@ -64,6 +64,12 @@ public class SecurityConfig {
                                                                 "/api/auth/login",
                                                                 "/api/auth/tokens/refresh")
                                                 .permitAll()
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/api/courses",
+                                                                "/api/courses/*",
+                                                                "/api/course-categories",
+                                                                "/api/course-tags")
+                                                .permitAll()
                                                 // 管理端接口先在过滤链做角色拦截，确保普通学生返回 HTTP 403。
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                 .anyRequest().authenticated())
