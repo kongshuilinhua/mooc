@@ -40,4 +40,19 @@ public enum RbacErrorCode implements ErrorCode {
     public String message() {
         return message;
     }
+
+    /**
+     * RBAC 错误对应 HTTP 状态码。
+     *
+     * @return HTTP 状态码
+     */
+    @Override
+    public int httpStatus() {
+        return switch (this) {
+            case ROLE_NOT_FOUND, USER_NOT_FOUND -> 404;
+            case PERMISSION_DENIED -> 403;
+            case ROLE_CODE_EXISTS -> 409;
+            default -> 400;
+        };
+    }
 }

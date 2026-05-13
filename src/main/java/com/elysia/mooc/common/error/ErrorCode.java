@@ -18,4 +18,14 @@ public interface ErrorCode {
      * @return 错误提示
      */
     String message();
+
+    /**
+     * 获取建议 HTTP 状态码。
+     *
+     * @return HTTP 状态码
+     */
+    default int httpStatus() {
+        return 400;
+    }
 }
+

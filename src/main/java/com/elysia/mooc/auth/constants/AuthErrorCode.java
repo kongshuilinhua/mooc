@@ -61,4 +61,24 @@ public enum AuthErrorCode implements ErrorCode {
     public String message() {
         return message;
     }
+
+    /**
+     * 认证错误对应 HTTP 状态码。
+     *
+     * @return HTTP 状态码
+     */
+    @Override
+    public int httpStatus() {
+        return switch (this) {
+            case AUTH_BAD_CREDENTIALS,
+                    AUTH_TOKEN_EXPIRED,
+                    AUTH_REFRESH_TOKEN_INVALID,
+                    AUTH_LOGIN_REQUIRED,
+                    AUTH_USER_UNAVAILABLE -> 401;
+            case AUTH_USER_DISABLED -> 403;
+            case AUTH_USERNAME_EXISTS,
+                    AUTH_EMAIL_EXISTS,
+                    AUTH_PHONE_EXISTS -> 409;
+        };
+    }
 }

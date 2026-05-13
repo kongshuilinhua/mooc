@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionFailedException;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -30,9 +31,11 @@ public class GlobalExceptionHandler {
      * @return 统一失败响应
      */
     @ExceptionHandler(BizException.class)
-    public ApiResult<Void> handleBizException(BizException ex) {
+    public ResponseEntity<ApiResult<Void>> handleBizException(BizException ex) {
         log.warn("业务异常：{}", ex.getMessage());
-        return ApiResult.fail(ex.getCode(), ex.getMessage());
+        return ResponseEntity
+                .status(ex.getHttpStatus())
+                .body(ApiResult.fail(ex.getCode(), ex.getMessage()));
     }
 
     /**
@@ -49,16 +52,18 @@ public class GlobalExceptionHandler {
             MethodArgumentTypeMismatchException.class,
             ConversionFailedException.class
     })
-    public ApiResult<Map<String, List<ValidationErrorItem>>> handleParamException(Exception ex) {
+    public ResponseEntity<ApiResult<Map<String, List<ValidationErrorItem>>>> handleParamException(Exception ex) {
         // 先提取字段级错误明细，再优先返回首个中文提示，方便前端直接展示。
         List<ValidationErrorItem> errors = extractValidationErrors(ex);
         String message = errors.isEmpty()
                 ? CommonErrorCode.PARAM_INVALID.message()
                 : errors.get(0).getMessage();
-        return ApiResult.fail(
-                CommonErrorCode.PARAM_INVALID.code(),
-                message,
-                Map.of("errors", errors));
+        return ResponseEntity
+                .status(CommonErrorCode.PARAM_INVALID.httpStatus())
+                .body(ApiResult.fail(
+                        CommonErrorCode.PARAM_INVALID.code(),
+                        message,
+                        Map.of("errors", errors)));
     }
 
     /**
@@ -68,9 +73,11 @@ public class GlobalExceptionHandler {
      * @return 统一系统错误响应
      */
     @ExceptionHandler(Exception.class)
-    public ApiResult<Void> handleException(Exception ex) {
+    public ResponseEntity<ApiResult<Void>> handleException(Exception ex) {
         log.error("未处理的系统异常", ex);
-        return ApiResult.fail(CommonErrorCode.SYSTEM_ERROR.code(), CommonErrorCode.SYSTEM_ERROR.message());
+        return ResponseEntity
+                .status(CommonErrorCode.SYSTEM_ERROR.httpStatus())
+                .body(ApiResult.fail(CommonErrorCode.SYSTEM_ERROR.code(), CommonErrorCode.SYSTEM_ERROR.message()));
     }
 
     /**

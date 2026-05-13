@@ -44,3 +44,17 @@ mooc:
     url: ${QDRANT_URL:http://192.168.150.101:6333}
     collection: ${QDRANT_COLLECTION:mooc_knowledge}
     vector-size: ${QDRANT_VECTOR_SIZE:1024}
+  storage:
+    root-path: ${MOOC_STORAGE_ROOT:D:/mooc-storage}
+    public-prefix: ${MOOC_STORAGE_PUBLIC_PREFIX:/files}
+    max-file-size: ${MOOC_STORAGE_MAX_FILE_SIZE:536870912}
+    allowed-content-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+      - video/mp4
+      - application/pdf
+      - text/plain
+      - text/markdown
+      - application/msword
+      - application/vnd.openxmlformats-officedocument.wordprocessingml.document

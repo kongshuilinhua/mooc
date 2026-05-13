@@ -12,6 +12,9 @@ public class BizException extends RuntimeException {
     /** 业务错误码。 */
     private final int code;
 
+    /** HTTP 状态码。 */
+    private final int httpStatus;
+
     /**
      * 根据错误码创建业务异常。
      *
@@ -20,6 +23,7 @@ public class BizException extends RuntimeException {
     public BizException(ErrorCode errorCode) {
         super(errorCode.message());
         this.code = errorCode.code();
+        this.httpStatus = errorCode.httpStatus();
     }
 
     /**
@@ -31,5 +35,6 @@ public class BizException extends RuntimeException {
     public BizException(ErrorCode errorCode, String message) {
         super(message);
         this.code = errorCode.code();
+        this.httpStatus = errorCode.httpStatus();
     }
 }

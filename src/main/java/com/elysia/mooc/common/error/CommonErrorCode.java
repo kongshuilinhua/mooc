@@ -56,4 +56,14 @@ public enum CommonErrorCode implements ErrorCode {
     public String message() {
         return message;
     }
+
+    /**
+     * 通用错误码本身使用标准 HTTP 状态码，直接作为响应状态。
+     *
+     * @return HTTP 状态码
+     */
+    @Override
+    public int httpStatus() {
+        return code;
+    }
 }
