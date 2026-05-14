@@ -27,6 +27,9 @@ public enum CourseErrorCode implements ErrorCode {
     /** 当前课程状态不允许操作。 */
     COURSE_STATUS_INVALID(4006, "当前课程状态不允许操作"),
 
+    /** 课程发布前内容不完整。 */
+    COURSE_CONTENT_INCOMPLETE(4007, "课程内容不完整，请补齐基础信息、章节和小节"),
+
     /** 课程目录参数错误。 */
     CATALOG_PARAM_INVALID(4101, "课程目录参数不正确"),
 
@@ -82,6 +85,7 @@ public enum CourseErrorCode implements ErrorCode {
             case COURSE_FORBIDDEN,
                     CATALOG_FORBIDDEN -> 403;
             case COURSE_STATUS_INVALID,
+                    COURSE_CONTENT_INCOMPLETE,
                     CATALOG_STATUS_INVALID,
                     CATALOG_CHAPTER_HAS_SECTION,
                     CATALOG_SECTION_HAS_CONCEPT,
