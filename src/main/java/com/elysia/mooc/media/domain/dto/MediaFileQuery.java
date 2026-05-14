@@ -18,6 +18,9 @@ public class MediaFileQuery extends PageQuery {
     /** 上传状态。 */
     private MediaUploadStatus uploadStatus;
 
+    /** 兼容旧合同中的状态筛选字段，语义等同 uploadStatus。 */
+    private MediaUploadStatus status;
+
     /** 搜索关键字。 */
     @Size(max = 100, message = "搜索关键字不能超过100个字符")
     private String keyword;

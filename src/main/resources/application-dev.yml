@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: ${MOOC_MULTIPART_MAX_FILE_SIZE:512MB}
+      max-request-size: ${MOOC_MULTIPART_MAX_REQUEST_SIZE:512MB}
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL:jdbc:mysql://192.168.150.101:3306/mooc?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true}

@@ -34,6 +34,7 @@ public class MergeChunksRequest implements Checker {
 
     @Override
     public void check() {
+        // fileHash 是新合同字段，fileMd5 只做兼容；自校验阶段统一去空白，避免 Service 重复判断。
         this.fileHash = normalizeHash(fileHash);
         this.fileMd5 = normalizeHash(fileMd5);
         this.fileName = fileName == null ? null : fileName.trim();

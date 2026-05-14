@@ -89,7 +89,7 @@ abstract class CourseCatalogAccessSupport {
     protected boolean hasRole(LoginUser loginUser, String roleCode) {
         return loginUser != null
                 && loginUser.getRoles() != null
-                && loginUser.getRoles().stream().anyMatch(role -> roleCode.equalsIgnoreCase(role));
+                && loginUser.getRoles().stream().anyMatch(roleCode::equalsIgnoreCase);
     }
 
     protected boolean hasPermission(LoginUser loginUser, String permissionCode) {

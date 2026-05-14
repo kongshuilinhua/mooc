@@ -19,11 +19,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addFormatters(FormatterRegistry registry) {
+        // 查询参数也要复用 BaseEnum 解析规则，保证 bizType/status 支持枚举名和业务编码。
         registry.addConverterFactory(new StringToBaseEnumConverterFactory());
     }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        // 文件公开前缀来自配置，避免把本地存储路径暴露为接口路径。
         String publicPrefix = mediaStorageProperties.getPublicPrefix();
         String pattern = publicPrefix.endsWith("/**") ? publicPrefix : publicPrefix + "/**";
         String rootPath = mediaStorageProperties.getRootPath().replace("\\", "/");

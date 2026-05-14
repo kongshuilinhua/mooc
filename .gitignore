@@ -1,0 +1,57 @@
+# Maven build output
+target/
+*.class
+
+# Test and build logs
+*.log
+*.tmp
+*.temp
+*.dump
+*.dumpstream
+hs_err_pid*
+replay_pid*
+
+# IDE files
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local environment files
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.yaml
+application-*.local.yml
+application-*.local.yaml
+
+# Runtime storage
+logs/
+storage/
+uploads/
+files/
+tmp/
+
+# Docker local data, if compose files are later copied into this repo
+docker/.env
+docker/mysql/data/
+docker/redis/data/
+docker/kafka/data/
+docker/qdrant/storage/
+
+# Keep Maven Wrapper files under version control
+!.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.properties
+!mvnw
+!mvnw.cmd
+/.mvn/wrapper/maven-wrapper.properties
+/mvnw
+/mvnw.cmd
+*.sql
