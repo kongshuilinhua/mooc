@@ -3,12 +3,16 @@ package com.elysia.mooc.message.domain.vo;
 import com.elysia.mooc.common.enums.MessageType;
 import com.elysia.mooc.common.enums.ReadStatus;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /** 用户消息视图对象 */
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MessageVO {
 
     /** 消息ID */

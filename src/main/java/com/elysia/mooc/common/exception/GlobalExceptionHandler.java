@@ -92,7 +92,7 @@ public class GlobalExceptionHandler {
         // 按异常类型分别提取字段级错误，统一收敛为前端可直接展示的错误列表。
         if (ex instanceof MethodArgumentNotValidException argumentException) {
             argumentException.getBindingResult().getFieldErrors().forEach(fieldError -> errors.add(
-                    new ValidationErrorItem(fieldError.getField(), fieldError.getDefaultMessage())));
+                    new ValidationErrorItem(fieldError.getField(), resolveFieldErrorMessage(fieldError))));
             argumentException.getBindingResult().getGlobalErrors().forEach(globalError -> errors.add(
                     new ValidationErrorItem("请求", globalError.getDefaultMessage())));
             return errors;
@@ -100,7 +100,7 @@ public class GlobalExceptionHandler {
 
         if (ex instanceof BindException bindException) {
             bindException.getBindingResult().getFieldErrors().forEach(fieldError -> errors.add(
-                    new ValidationErrorItem(fieldError.getField(), fieldError.getDefaultMessage())));
+                    new ValidationErrorItem(fieldError.getField(), resolveFieldErrorMessage(fieldError))));
             bindException.getBindingResult().getGlobalErrors().forEach(globalError -> errors.add(
                     new ValidationErrorItem("请求", globalError.getDefaultMessage())));
             return errors;
@@ -126,5 +126,16 @@ public class GlobalExceptionHandler {
             errors.add(new ValidationErrorItem("请求", "请求体格式错误或枚举值不合法"));
         }
         return errors;
+    }
+
+    private String resolveFieldErrorMessage(org.springframework.validation.FieldError fieldError) {
+        if (fieldError != null && fieldError.getCodes() != null) {
+            for (String code : fieldError.getCodes()) {
+                if (code != null && code.startsWith("typeMismatch")) {
+                    return "参数类型错误或枚举值不合法";
+                }
+            }
+        }
+        return fieldError == null ? CommonErrorCode.PARAM_INVALID.message() : fieldError.getDefaultMessage();
     }
 }
