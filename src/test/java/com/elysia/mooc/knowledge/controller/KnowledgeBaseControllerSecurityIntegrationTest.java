@@ -14,7 +14,10 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** 知识库管理接口的真实安全链路测试。 */
-@SpringBootTest(properties = "mooc.event.message-consumer-auto-startup=false")
+@SpringBootTest(properties = {
+        "mooc.event.message-consumer-auto-startup=false",
+        "mooc.qdrant.auto-initialize=false"
+})
 @AutoConfigureMockMvc
 class KnowledgeBaseControllerSecurityIntegrationTest {
 
@@ -56,6 +59,20 @@ class KnowledgeBaseControllerSecurityIntegrationTest {
     @WithMockUser(username = "student", roles = "STUDENT")
     void parseDocumentShouldReturn403WhenStudentAuthenticated() throws Exception {
         mockMvc.perform(post("/api/admin/ai/documents/12101/parse"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.FORBIDDEN.code()))
+                .andExpect(jsonPath("$.message").value(CommonErrorCode.FORBIDDEN.message()));
+    }
+
+    /**
+     * day14 向量检索调试属于管理端接口，学生访问必须返回 HTTP 403。
+     */
+    @Test
+    @WithMockUser(username = "student", roles = "STUDENT")
+    void vectorSearchShouldReturn403WhenStudentAuthenticated() throws Exception {
+        mockMvc.perform(post("/api/admin/ai/vector-search")
+                        .contentType("application/json")
+                        .content("{\"query\":\"课程怎么学习\",\"topK\":1}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(CommonErrorCode.FORBIDDEN.code()))
                 .andExpect(jsonPath("$.message").value(CommonErrorCode.FORBIDDEN.message()));

@@ -48,7 +48,17 @@ mooc:
     url: ${QDRANT_URL:http://192.168.150.101:6333}
     collection: ${QDRANT_COLLECTION:mooc_knowledge}
     vector-size: ${QDRANT_VECTOR_SIZE:1024}
+    distance: ${QDRANT_DISTANCE:Cosine}
+    auto-initialize: ${QDRANT_AUTO_INITIALIZE:true}
+    timeout-seconds: ${QDRANT_TIMEOUT_SECONDS:10}
   ai:
+    embedding:
+      provider: ${MOOC_AI_PROVIDER:bailian}
+      base-url: ${MOOC_AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+      api-key-env: ${MOOC_AI_API_KEY_ENV:DASHSCOPE_API_KEY}
+      model: ${MOOC_AI_EMBEDDING_MODEL:text-embedding-v4}
+      dimensions: ${MOOC_AI_EMBEDDING_DIMENSIONS:1024}
+      timeout-seconds: ${MOOC_AI_TIMEOUT_SECONDS:60}
     segment:
       max-length: ${MOOC_SEGMENT_MAX_LENGTH:800}
       overlap-length: ${MOOC_SEGMENT_OVERLAP_LENGTH:100}

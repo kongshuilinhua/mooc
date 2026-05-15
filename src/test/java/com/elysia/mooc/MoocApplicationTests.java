@@ -9,7 +9,10 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.charset.StandardCharsets;
 
-@SpringBootTest(properties = "mooc.event.message-consumer-auto-startup=false")
+@SpringBootTest(properties = {
+        "mooc.event.message-consumer-auto-startup=false",
+        "mooc.qdrant.auto-initialize=false"
+})
 class MoocApplicationTests {
 
     @Autowired
