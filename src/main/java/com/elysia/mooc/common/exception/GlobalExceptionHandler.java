@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -36,6 +37,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ex.getHttpStatus())
                 .body(ApiResult.fail(ex.getCode(), ex.getMessage()));
+    }
+
+    /**
+     * 处理 Spring Security 方法级授权异常，避免 @PreAuthorize 拒绝访问时落入系统 500。
+     *
+     * @param ex 权限异常，包含 AuthorizationDeniedException 等子类
+     * @return 统一无权限响应
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResult<Void>> handleAccessDeniedException(AccessDeniedException ex) {
+        log.warn("权限不足：{}", ex.getMessage());
+        return ResponseEntity
+                .status(CommonErrorCode.FORBIDDEN.httpStatus())
+                .body(ApiResult.fail(CommonErrorCode.FORBIDDEN.code(), CommonErrorCode.FORBIDDEN.message()));
     }
 
     /**
