@@ -27,6 +27,7 @@ import com.elysia.mooc.course.mapper.CourseChapterMapper;
 import com.elysia.mooc.course.mapper.CourseMapper;
 import com.elysia.mooc.course.mapper.CourseSectionMapper;
 import com.elysia.mooc.course.service.CourseAuditService;
+import com.elysia.mooc.event.service.BusinessEventPublisher;
 import java.time.LocalDateTime;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,7 @@ public class CourseAuditServiceImpl implements CourseAuditService {
     private final CourseChapterMapper courseChapterMapper;
     private final CourseSectionMapper courseSectionMapper;
     private final CourseAuditLogMapper courseAuditLogMapper;
+    private final BusinessEventPublisher businessEventPublisher;
 
     /**
      * 提交课程审核。
@@ -239,6 +241,21 @@ public class CourseAuditServiceImpl implements CourseAuditService {
         log.setAuditAction(action);
         log.setDeleted(0);
         courseAuditLogMapper.insert(log);
+
+        // 审核状态事件和审核日志保持在同一事务，Kafka 不可用时由发布日志和重试任务补偿。
+        businessEventPublisher.publishAuditStatusChanged(
+                course.getId(),
+                course.getTitle(),
+                course.getTeacherId(),
+                beforeStatus,
+                targetStatus,
+                action,
+                operatorId,
+                log.getAuditComment());
+        if (targetStatus == CourseStatus.PUBLISHED) {
+            businessEventPublisher.publishCoursePublished(
+                    course.getId(), course.getTitle(), course.getTeacherId(), course.getPublishTime());
+        }
     }
 
     /**

@@ -14,8 +14,10 @@ import com.elysia.mooc.common.exception.BizException;
 import com.elysia.mooc.course.domain.enums.CourseStatus;
 import com.elysia.mooc.course.domain.po.CoursePO;
 import com.elysia.mooc.course.mapper.CourseMapper;
+import com.elysia.mooc.event.service.BusinessEventPublisher;
 import com.elysia.mooc.interaction.constants.InteractionErrorCode;
 import com.elysia.mooc.interaction.domain.dto.AcceptAnswerRequest;
+import com.elysia.mooc.interaction.domain.dto.CreateAnswerRequest;
 import com.elysia.mooc.interaction.domain.dto.CreateRatingRequest;
 import com.elysia.mooc.interaction.domain.dto.LikeRequest;
 import com.elysia.mooc.interaction.domain.enums.AnswerAcceptedStatus;
@@ -73,6 +75,9 @@ class InteractionServiceImplTest {
 
     @Mock
     private InteractionReportMapper reportMapper;
+
+    @Mock
+    private BusinessEventPublisher businessEventPublisher;
 
     @InjectMocks
     private InteractionServiceImpl interactionService;
@@ -161,6 +166,26 @@ class InteractionServiceImplTest {
         ArgumentCaptor<InteractionLikePO> captor = ArgumentCaptor.forClass(InteractionLikePO.class);
         verify(likeMapper).insert(captor.capture());
         assertThat(captor.getValue().getDeleted()).isEqualTo(InteractionDeletedStatus.NORMAL.getValue());
+    }
+
+    @Test
+    void createAnswerShouldPublishAnswerCreatedEvent() {
+        when(userContextService.currentUserId()).thenReturn(2L);
+        when(questionMapper.selectById(9001L)).thenReturn(question(9001L, 3001L, 3L, QuestionStatus.OPEN));
+        CreateAnswerRequest request = new CreateAnswerRequest();
+        request.setContent("可以先看第一章的示例");
+
+        interactionService.createAnswer(9001L, request);
+
+        ArgumentCaptor<InteractionAnswerPO> answerCaptor = ArgumentCaptor.forClass(InteractionAnswerPO.class);
+        verify(answerMapper).insert(answerCaptor.capture());
+        verify(businessEventPublisher).publishInteractionAnswerCreated(
+                answerCaptor.getValue().getId(),
+                9001L,
+                3001L,
+                3L,
+                2L,
+                "测试问题");
     }
 
     @Test

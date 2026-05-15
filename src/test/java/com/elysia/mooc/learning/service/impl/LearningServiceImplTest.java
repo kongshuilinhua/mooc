@@ -16,6 +16,7 @@ import com.elysia.mooc.course.domain.po.CoursePO;
 import com.elysia.mooc.course.domain.po.CourseSectionPO;
 import com.elysia.mooc.course.mapper.CourseMapper;
 import com.elysia.mooc.course.mapper.CourseSectionMapper;
+import com.elysia.mooc.event.service.BusinessEventPublisher;
 import com.elysia.mooc.learning.constants.LearningConstants;
 import com.elysia.mooc.learning.constants.LearningErrorCode;
 import com.elysia.mooc.learning.domain.dto.JoinCourseRequest;
@@ -59,6 +60,9 @@ class LearningServiceImplTest {
 
     @Mock
     private LearningBehaviorLogMapper learningBehaviorLogMapper;
+
+    @Mock
+    private BusinessEventPublisher businessEventPublisher;
 
     @InjectMocks
     private LearningServiceImpl learningService;
@@ -134,6 +138,14 @@ class LearningServiceImplTest {
         ArgumentCaptor<LearningBehaviorLogPO> logCaptor = ArgumentCaptor.forClass(LearningBehaviorLogPO.class);
         verify(learningBehaviorLogMapper).insert(logCaptor.capture());
         assertThat(logCaptor.getValue().getExtra()).contains("\"deltaSeconds\":0");
+        verify(businessEventPublisher).publishLearningBehaviorCreated(
+                logCaptor.getValue().getId(),
+                3L,
+                3001L,
+                5001L,
+                logCaptor.getValue().getEventType(),
+                300,
+                0);
     }
 
     @Test

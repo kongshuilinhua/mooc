@@ -10,6 +10,7 @@ import com.elysia.mooc.common.exception.BizException;
 import com.elysia.mooc.course.domain.enums.CourseStatus;
 import com.elysia.mooc.course.domain.po.CoursePO;
 import com.elysia.mooc.course.mapper.CourseMapper;
+import com.elysia.mooc.event.service.BusinessEventPublisher;
 import com.elysia.mooc.interaction.constants.InteractionConstants;
 import com.elysia.mooc.interaction.constants.InteractionErrorCode;
 import com.elysia.mooc.interaction.domain.dto.AcceptAnswerRequest;
@@ -79,6 +80,7 @@ public class InteractionServiceImpl implements InteractionService {
     private final CourseFavoriteMapper favoriteMapper;
     private final InteractionLikeMapper likeMapper;
     private final InteractionReportMapper reportMapper;
+    private final BusinessEventPublisher businessEventPublisher;
 
     /**
      * 分页查询课程问题。
@@ -173,6 +175,15 @@ public class InteractionServiceImpl implements InteractionService {
         questionMapper.update(null, Wrappers.<InteractionQuestionPO>lambdaUpdate()
                 .eq(InteractionQuestionPO::getId, question.getId())
                 .setSql("answer_count = answer_count + 1"));
+
+        // 回答通知放入事件链路，避免问答写入主链路直接耦合站内信表。
+        businessEventPublisher.publishInteractionAnswerCreated(
+                answer.getId(),
+                question.getId(),
+                question.getCourseId(),
+                question.getUserId(),
+                userId,
+                question.getTitle());
 
         return InteractionCreateResultVO.builder()
                 .id(answer.getId())

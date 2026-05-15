@@ -11,6 +11,7 @@ import com.elysia.mooc.auth.security.LoginUser;
 import com.elysia.mooc.auth.service.UserContextService;
 import com.elysia.mooc.common.exception.BizException;
 import com.elysia.mooc.course.mapper.CourseSectionMapper;
+import com.elysia.mooc.event.service.BusinessEventPublisher;
 import com.elysia.mooc.media.constants.MediaConstants;
 import com.elysia.mooc.media.constants.MediaErrorCode;
 import com.elysia.mooc.media.domain.enums.MediaBizType;
@@ -23,6 +24,7 @@ import com.elysia.mooc.media.mapper.MediaFileMapper;
 import com.elysia.mooc.media.mapper.MediaVideoMapper;
 import com.elysia.mooc.media.service.MediaStorageService;
 import java.util.List;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -52,6 +54,9 @@ class MediaFileServiceImplTest {
     @Mock
     private CourseSectionMapper courseSectionMapper;
 
+    @Mock
+    private BusinessEventPublisher businessEventPublisher;
+
     @InjectMocks
     private MediaFileServiceImpl mediaFileService;
 
@@ -80,8 +85,17 @@ class MediaFileServiceImplTest {
 
         assertThat(result.getFileName()).isEqualTo("doc.txt");
         assertThat(result.getFileUrl()).isEqualTo("/files/doc.txt");
-        verify(mediaFileMapper).insert(any(MediaFilePO.class));
-        verify(mediaDocumentMapper).insert(any(MediaDocumentPO.class));
+        ArgumentCaptor<MediaFilePO> mediaFileCaptor = ArgumentCaptor.forClass(MediaFilePO.class);
+        ArgumentCaptor<MediaDocumentPO> documentCaptor = ArgumentCaptor.forClass(MediaDocumentPO.class);
+        verify(mediaFileMapper).insert(mediaFileCaptor.capture());
+        verify(mediaDocumentMapper).insert(documentCaptor.capture());
+        verify(businessEventPublisher).publishMediaDocumentUploaded(
+                mediaFileCaptor.getValue().getId(),
+                documentCaptor.getValue().getId(),
+                8L,
+                "doc.txt",
+                "/files/doc.txt",
+                MediaBizType.KNOWLEDGE_DOC);
     }
 
     @Test

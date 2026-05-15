@@ -12,6 +12,7 @@ import com.elysia.mooc.course.domain.po.CoursePO;
 import com.elysia.mooc.course.domain.po.CourseSectionPO;
 import com.elysia.mooc.course.mapper.CourseMapper;
 import com.elysia.mooc.course.mapper.CourseSectionMapper;
+import com.elysia.mooc.event.service.BusinessEventPublisher;
 import com.elysia.mooc.learning.constants.LearningConstants;
 import com.elysia.mooc.learning.constants.LearningErrorCode;
 import com.elysia.mooc.learning.domain.dto.JoinCourseRequest;
@@ -63,6 +64,7 @@ public class LearningServiceImpl implements LearningService {
     private final LearningCourseMapper learningCourseMapper;
     private final LearningRecordMapper learningRecordMapper;
     private final LearningBehaviorLogMapper learningBehaviorLogMapper;
+    private final BusinessEventPublisher businessEventPublisher;
 
     /**
      * 加入课程。
@@ -395,6 +397,10 @@ public class LearningServiceImpl implements LearningService {
         log.setExtra("{\"deltaSeconds\":" + safeInt(deltaSeconds) + "}");
         log.setCreateTime(LocalDateTime.now());
         learningBehaviorLogMapper.insert(log);
+
+        // 学习行为是后续统计、推荐和积分的共同来源，当前只发布轻量 ID 和状态字段。
+        businessEventPublisher.publishLearningBehaviorCreated(
+                log.getId(), userId, courseId, sectionId, eventType, position, safeInt(deltaSeconds));
     }
 
     private List<LearningCourseItem> toLearningCourseItems(List<LearningCoursePO> records) {

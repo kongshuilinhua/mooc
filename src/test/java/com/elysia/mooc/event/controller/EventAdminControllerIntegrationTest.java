@@ -14,7 +14,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** 管理端事件接口真实 Spring 上下文和数据库映射测试。 */
-@SpringBootTest
+@SpringBootTest(properties = "mooc.event.message-consumer-auto-startup=false")
 @AutoConfigureMockMvc
 class EventAdminControllerIntegrationTest {
 

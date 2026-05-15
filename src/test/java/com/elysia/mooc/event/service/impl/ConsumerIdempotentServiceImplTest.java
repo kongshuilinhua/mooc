@@ -14,12 +14,17 @@ import com.elysia.mooc.event.domain.po.EventConsumeLogPO;
 import com.elysia.mooc.event.mapper.EventConsumeLogMapper;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 
 /** 消费幂等服务测试。 */
 @ExtendWith(MockitoExtension.class)
@@ -28,8 +33,13 @@ class ConsumerIdempotentServiceImplTest {
     @Mock
     private EventConsumeLogMapper eventConsumeLogMapper;
 
-    @InjectMocks
     private ConsumerIdempotentServiceImpl consumerIdempotentService;
+
+    @BeforeEach
+    void setUp() {
+        PlatformTransactionManager transactionManager = new TestTransactionManager();
+        consumerIdempotentService = new ConsumerIdempotentServiceImpl(eventConsumeLogMapper, transactionManager);
+    }
 
     @Test
     void executeOnceShouldRunHandlerAndRecordSuccess() {
@@ -87,5 +97,27 @@ class ConsumerIdempotentServiceImplTest {
                 .bizKey("answer:1")
                 .payload(Map.of("answerId", 1L))
                 .build();
+    }
+
+    /** 测试用事务管理器，只验证 REQUIRES_NEW 代码路径，不连接真实数据库事务。 */
+    private static class TestTransactionManager extends AbstractPlatformTransactionManager {
+
+        @Override
+        protected Object doGetTransaction() throws TransactionException {
+            return new Object();
+        }
+
+        @Override
+        protected void doBegin(Object transaction, org.springframework.transaction.TransactionDefinition definition)
+                throws TransactionException {
+        }
+
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
+        }
+
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
+        }
     }
 }

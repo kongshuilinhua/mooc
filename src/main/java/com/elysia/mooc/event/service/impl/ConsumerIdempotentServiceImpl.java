@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 
 /** 消费者幂等服务实现。 */
@@ -22,6 +25,7 @@ public class ConsumerIdempotentServiceImpl implements ConsumerIdempotentService 
     private static final int MAX_ERROR_LENGTH = 1000;
 
     private final EventConsumeLogMapper eventConsumeLogMapper;
+    private final PlatformTransactionManager transactionManager;
 
     /**
      * 判断事件是否已经成功消费。
@@ -55,7 +59,8 @@ public class ConsumerIdempotentServiceImpl implements ConsumerIdempotentService 
             recordSuccess(event, consumerGroup);
             return true;
         } catch (RuntimeException ex) {
-            recordFailure(event, consumerGroup, ex);
+            // 失败日志必须独立提交，否则外层消费事务回滚时会丢失失败原因，后台无法排查。
+            recordFailureInNewTransaction(event, consumerGroup, ex);
             throw ex;
         }
     }
@@ -114,6 +119,12 @@ public class ConsumerIdempotentServiceImpl implements ConsumerIdempotentService 
                 .eq(EventConsumeLogPO::getEventId, eventId.trim())
                 .eq(EventConsumeLogPO::getConsumerGroup, consumerGroup.trim())
                 .eq(EventConsumeLogPO::getStatus, EventConsumeStatus.SUCCESS));
+    }
+
+    private void recordFailureInNewTransaction(DomainEvent event, String consumerGroup, Throwable throwable) {
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.executeWithoutResult(status -> recordFailure(event, consumerGroup, throwable));
     }
 
     private EventConsumeLogPO findAny(String eventId, String consumerGroup) {

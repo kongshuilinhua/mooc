@@ -10,6 +10,7 @@ import com.elysia.mooc.common.exception.BizException;
 import com.elysia.mooc.common.utils.BeanCopyUtils;
 import com.elysia.mooc.course.domain.po.CourseSectionPO;
 import com.elysia.mooc.course.mapper.CourseSectionMapper;
+import com.elysia.mooc.event.service.BusinessEventPublisher;
 import com.elysia.mooc.media.constants.MediaConstants;
 import com.elysia.mooc.media.constants.MediaErrorCode;
 import com.elysia.mooc.media.domain.dto.MediaFileQuery;
@@ -47,6 +48,7 @@ public class MediaFileServiceImpl implements MediaFileService {
     private final MediaVideoMapper mediaVideoMapper;
     private final MediaDocumentMapper mediaDocumentMapper;
     private final CourseSectionMapper courseSectionMapper;
+    private final BusinessEventPublisher businessEventPublisher;
 
     /**
      * 普通文件上传。
@@ -261,6 +263,15 @@ public class MediaFileServiceImpl implements MediaFileService {
             document.setParseStatus(MediaParseStatus.PENDING);
             document.setDeleted(0);
             mediaDocumentMapper.insert(document);
+
+            // day11.5 只发布待解析事件，真正解析、切片和向量化由 day12 之后接管。
+            businessEventPublisher.publishMediaDocumentUploaded(
+                    mediaFile.getId(),
+                    document.getId(),
+                    mediaFile.getOwnerId(),
+                    mediaFile.getOriginalName(),
+                    mediaFile.getUrl(),
+                    mediaFile.getBizType());
         }
     }
 

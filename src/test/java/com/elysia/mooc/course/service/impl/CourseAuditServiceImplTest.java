@@ -28,6 +28,7 @@ import com.elysia.mooc.course.mapper.CourseAuditLogMapper;
 import com.elysia.mooc.course.mapper.CourseChapterMapper;
 import com.elysia.mooc.course.mapper.CourseMapper;
 import com.elysia.mooc.course.mapper.CourseSectionMapper;
+import com.elysia.mooc.event.service.BusinessEventPublisher;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,9 @@ class CourseAuditServiceImplTest {
     @Mock
     private CourseAuditLogMapper courseAuditLogMapper;
 
+    @Mock
+    private BusinessEventPublisher businessEventPublisher;
+
     @InjectMocks
     private CourseAuditServiceImpl courseAuditService;
 
@@ -80,6 +84,15 @@ class CourseAuditServiceImplTest {
         assertThat(logCaptor.getValue().getAfterStatus()).isEqualTo(CourseStatus.PENDING);
         assertThat(logCaptor.getValue().getAuditAction()).isEqualTo(CourseAuditAction.SUBMIT);
         assertThat(logCaptor.getValue().getAuditComment()).isEqualTo("提交审核");
+        verify(businessEventPublisher).publishAuditStatusChanged(
+                3006L,
+                "测试课程",
+                2L,
+                CourseStatus.DRAFT,
+                CourseStatus.PENDING,
+                CourseAuditAction.SUBMIT,
+                2L,
+                "提交审核");
     }
 
     @Test
@@ -121,6 +134,8 @@ class CourseAuditServiceImplTest {
         ArgumentCaptor<CourseAuditLogPO> logCaptor = ArgumentCaptor.forClass(CourseAuditLogPO.class);
         verify(courseAuditLogMapper).insert(logCaptor.capture());
         assertThat(logCaptor.getValue().getAuditAction()).isEqualTo(CourseAuditAction.APPROVE);
+        verify(businessEventPublisher).publishCoursePublished(
+                3003L, "测试课程", 2L, courseCaptor.getValue().getPublishTime());
     }
 
     @Test
