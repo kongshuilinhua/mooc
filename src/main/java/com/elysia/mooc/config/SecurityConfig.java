@@ -72,6 +72,8 @@ public class SecurityConfig {
                                                                 "/api/course-categories",
                                                                 "/api/course-tags")
                                                 .permitAll()
+                                                .requestMatchers("/api/admin/ai/documents/**")
+                                                .hasAnyAuthority("ROLE_ADMIN", "ai:kb:manage")
                                                 // 管理端接口先在过滤链做角色拦截，确保普通学生返回 HTTP 403。
                                                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                                                 .anyRequest().authenticated())

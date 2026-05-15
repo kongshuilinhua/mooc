@@ -1,6 +1,7 @@
 package com.elysia.mooc.knowledge.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,5 +47,41 @@ class KnowledgeBaseControllerSecurityIntegrationTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value(CommonErrorCode.FORBIDDEN.code()))
                 .andExpect(jsonPath("$.message").value(CommonErrorCode.FORBIDDEN.message()));
+    }
+
+    /**
+     * day13 解析入口挂在管理端路径下，学生访问必须返回真实 HTTP 403。
+     */
+    @Test
+    @WithMockUser(username = "student", roles = "STUDENT")
+    void parseDocumentShouldReturn403WhenStudentAuthenticated() throws Exception {
+        mockMvc.perform(post("/api/admin/ai/documents/12101/parse"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.FORBIDDEN.code()))
+                .andExpect(jsonPath("$.message").value(CommonErrorCode.FORBIDDEN.message()));
+    }
+
+    /**
+     * 切片列表也属于知识库管理能力，学生不能查看后台切片内容。
+     */
+    @Test
+    @WithMockUser(username = "student", roles = "STUDENT")
+    void listSegmentsShouldReturn403WhenStudentAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/admin/ai/documents/12101/segments")
+                        .param("pageNo", "1")
+                        .param("pageSize", "10"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value(CommonErrorCode.FORBIDDEN.code()))
+                .andExpect(jsonPath("$.message").value(CommonErrorCode.FORBIDDEN.message()));
+    }
+
+    /**
+     * day13 合同允许拥有 ai:kb:manage 权限的非 ADMIN 账号操作解析接口。
+     */
+    @Test
+    @WithMockUser(username = "kb-manager", authorities = "ai:kb:manage")
+    void parseDocumentShouldEnterServiceWhenUserHasKnowledgeManagePermission() throws Exception {
+        mockMvc.perform(post("/api/admin/ai/documents/12101/parse"))
+                .andExpect(status().isUnauthorized());
     }
 }

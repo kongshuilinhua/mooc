@@ -1,6 +1,7 @@
 package com.elysia.mooc.config;
 
 import com.elysia.mooc.common.enums.StringToBaseEnumConverterFactory;
+import com.elysia.mooc.knowledge.parse.SegmentConfig;
 import com.elysia.mooc.media.config.MediaStorageProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +13,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /** MVC 工程化配置。 */
 @Configuration
 @RequiredArgsConstructor
-@EnableConfigurationProperties(MediaStorageProperties.class)
+@EnableConfigurationProperties({MediaStorageProperties.class, SegmentConfig.class})
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final MediaStorageProperties mediaStorageProperties;
