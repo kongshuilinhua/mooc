@@ -4,6 +4,7 @@ import com.elysia.mooc.auth.constants.AuthErrorCode;
 import com.elysia.mooc.auth.security.JwtAuthenticationFilter;
 import com.elysia.mooc.common.api.ApiResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -52,6 +53,9 @@ public class SecurityConfig {
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                                                // SSE 完成后会触发容器内部的 ASYNC/ERROR 分派，不能再按普通业务请求重新鉴权。
+                                                .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR)
+                                                .permitAll()
                                                 // 先放行健康检查、文档和认证入口，其余接口统一要求登录。
                                                 .requestMatchers(
                                                                 "/api/ping",
@@ -60,6 +64,7 @@ public class SecurityConfig {
                                                                 "/v3/api-docs/**",
                                                                 "/swagger-ui/**",
                                                                 "/swagger-ui.html",
+                                                                "/error",
                                                                 "/api/auth/register",
                                                                 "/api/auth/login",
                                                                 "/api/auth/tokens/refresh")
@@ -131,6 +136,9 @@ public class SecurityConfig {
                         ObjectMapper objectMapper,
                         int httpStatus,
                         ApiResult<?> result) throws IOException {
+                if (response.isCommitted()) {
+                        return;
+                }
                 response.setStatus(httpStatus);
                 response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
