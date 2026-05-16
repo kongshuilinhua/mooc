@@ -52,6 +52,14 @@ mooc:
     auto-initialize: ${QDRANT_AUTO_INITIALIZE:true}
     timeout-seconds: ${QDRANT_TIMEOUT_SECONDS:10}
   ai:
+    chat:
+      provider: ${MOOC_AI_PROVIDER:bailian}
+      base-url: ${MOOC_AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+      api-key-env: ${MOOC_AI_API_KEY_ENV:DASHSCOPE_API_KEY}
+      model: ${MOOC_AI_CHAT_MODEL:qwen-plus}
+      timeout-seconds: ${MOOC_AI_TIMEOUT_SECONDS:60}
+      history-limit: ${MOOC_AI_CHAT_HISTORY_LIMIT:10}
+      system-prompt: ${MOOC_AI_CHAT_SYSTEM_PROMPT:你是 MOOC 学习平台的 AI 助手，请用中文给出准确、简洁、适合学习场景的回答。}
     embedding:
       provider: ${MOOC_AI_PROVIDER:bailian}
       base-url: ${MOOC_AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
