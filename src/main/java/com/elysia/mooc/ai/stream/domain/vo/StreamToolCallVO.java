@@ -1,19 +1,20 @@
-package com.elysia.mooc.ai.chat.domain.vo;
+package com.elysia.mooc.ai.stream.domain.vo;
 
+import java.util.Collections;
 import java.util.Map;
 import lombok.Data;
 
-/** AI 工具调用信息，day15 普通聊天默认返回空列表。 */
+/** SSE Tool 调用事件。 */
 @Data
-public class AiToolCallVO {
+public class StreamToolCallVO {
 
     /** 工具名称。 */
     private String toolName;
 
     /** 工具入参。 */
-    private Map<String, Object> arguments;
+    private Map<String, Object> arguments = Collections.emptyMap();
 
-    /** 是否调用成功。 */
+    /** 是否成功。 */
     private Boolean success;
 
     /** 结果摘要。 */

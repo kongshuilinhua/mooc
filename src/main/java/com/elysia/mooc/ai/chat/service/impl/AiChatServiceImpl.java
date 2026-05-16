@@ -21,6 +21,9 @@ import com.elysia.mooc.ai.model.AiChatProperties;
 import com.elysia.mooc.ai.model.ChatCompletionMessage;
 import com.elysia.mooc.ai.model.ChatCompletionRequest;
 import com.elysia.mooc.ai.model.ChatCompletionResult;
+import com.elysia.mooc.ai.tool.domain.vo.ToolCallResult;
+import com.elysia.mooc.ai.tool.service.ToolOrchestrationService;
+import com.elysia.mooc.auth.security.LoginUser;
 import com.elysia.mooc.auth.service.UserContextService;
 import com.elysia.mooc.common.exception.BizException;
 import java.time.LocalDateTime;
@@ -42,6 +45,7 @@ public class AiChatServiceImpl implements AiChatService {
     private final AiMessageMapper messageMapper;
     private final AiChatProperties chatProperties;
     private final AiChatClient aiChatClient;
+    private final ToolOrchestrationService toolOrchestrationService;
 
     /**
      * 发送普通聊天消息。
@@ -53,17 +57,24 @@ public class AiChatServiceImpl implements AiChatService {
     @Transactional(rollbackFor = Exception.class, noRollbackFor = BizException.class)
     public ChatResultVO chat(ChatRequest request) {
         ChatRequest safeRequest = requireRequest(request);
-        Long userId = userContextService.currentUserId();
+        LoginUser loginUser = userContextService.currentLoginUser();
+        Long userId = loginUser.getUserId();
 
         // 1. 会话和用户消息先落库，确保模型失败时也能留下用户可追踪的上下文。
         AiConversationPO conversation = resolveConversation(safeRequest, userId);
         AiMessagePO userMessage = saveUserMessage(conversation.getId(), userId, safeRequest.getMessage().trim());
+        List<ToolCallResult> toolResults = toolOrchestrationService.planAndExecute(
+                safeRequest.getMessage(),
+                conversation.getId(),
+                userMessage.getId(),
+                loginUser);
 
         try {
-            ChatCompletionResult result = aiChatClient.complete(buildCompletionRequest(conversation.getId()));
+            ChatCompletionResult result = aiChatClient.complete(
+                    buildCompletionRequest(conversation.getId(), toolResults));
             AiMessagePO assistantMessage = saveAssistantSuccessMessage(conversation.getId(), userId, result);
             touchConversation(conversation.getId(), assistantMessage.getCreateTime());
-            return toChatResult(conversation.getId(), assistantMessage);
+            return toChatResult(conversation.getId(), assistantMessage, toolResults);
         } catch (BizException ex) {
             // 2. 模型失败不能抹掉用户消息，保存失败助手消息后再把中文错误交给全局异常处理。
             AiMessagePO failedMessage = saveAssistantFailedMessage(
@@ -160,7 +171,7 @@ public class AiChatServiceImpl implements AiChatService {
         return message;
     }
 
-    private ChatCompletionRequest buildCompletionRequest(Long conversationId) {
+    private ChatCompletionRequest buildCompletionRequest(Long conversationId, List<ToolCallResult> toolResults) {
         List<ChatCompletionMessage> messages = new ArrayList<>();
         if (StringUtils.hasText(chatProperties.getSystemPrompt())) {
             messages.add(new ChatCompletionMessage("system", chatProperties.getSystemPrompt().trim()));
@@ -168,6 +179,11 @@ public class AiChatServiceImpl implements AiChatService {
         List<AiMessagePO> history = recentSuccessMessages(conversationId);
         for (AiMessagePO message : history) {
             messages.add(new ChatCompletionMessage(toOpenAiRole(message.getRole()), message.getContent()));
+        }
+        String toolContext = toolOrchestrationService.buildToolContext(toolResults);
+        if (StringUtils.hasText(toolContext)) {
+            // 工具结果作为事实上下文追加给模型，避免把工具执行权交给模型自由发挥。
+            messages.add(new ChatCompletionMessage("system", toolContext));
         }
         return new ChatCompletionRequest(chatProperties.getModel(), messages);
     }
@@ -196,13 +212,15 @@ public class AiChatServiceImpl implements AiChatService {
         conversationMapper.updateById(conversation);
     }
 
-    private ChatResultVO toChatResult(Long conversationId, AiMessagePO message) {
+    private ChatResultVO toChatResult(Long conversationId, AiMessagePO message, List<ToolCallResult> toolResults) {
         ChatResultVO vo = new ChatResultVO();
         vo.setConversationId(conversationId);
         vo.setMessageId(message.getId());
         vo.setContent(message.getContent());
         vo.setSources(Collections.<AiSourceVO>emptyList());
-        vo.setToolCalls(Collections.<AiToolCallVO>emptyList());
+        vo.setToolCalls(toolResults == null
+                ? Collections.<AiToolCallVO>emptyList()
+                : toolResults.stream().map(ToolCallResult::toAiToolCallVO).toList());
         vo.setStatus(message.getStatus());
         vo.setModelName(message.getModelName());
         vo.setPromptTokens(message.getPromptTokens());

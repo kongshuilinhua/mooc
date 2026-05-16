@@ -35,6 +35,9 @@ import com.elysia.mooc.ai.stream.domain.vo.StreamDoneVO;
 import com.elysia.mooc.ai.stream.domain.vo.StreamErrorVO;
 import com.elysia.mooc.ai.stream.domain.vo.StreamMessageVO;
 import com.elysia.mooc.ai.stream.domain.vo.StreamStartVO;
+import com.elysia.mooc.ai.stream.domain.vo.StreamToolCallVO;
+import com.elysia.mooc.ai.tool.domain.vo.ToolCallResult;
+import com.elysia.mooc.ai.tool.service.ToolOrchestrationService;
 import com.elysia.mooc.ai.stream.support.SseEmitterFactory;
 import com.elysia.mooc.auth.security.LoginUser;
 import com.elysia.mooc.auth.service.UserContextService;
@@ -46,6 +49,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,6 +84,9 @@ class StreamingChatServiceImplTest {
     @Mock
     private SseEmitterFactory emitterFactory;
 
+    @Mock
+    private ToolOrchestrationService toolOrchestrationService;
+
     private final SseEmitter emitter = new SseEmitter(1000L);
     private final List<SentEvent> events = new ArrayList<>();
     private StreamingChatServiceImpl streamingService;
@@ -102,7 +109,8 @@ class StreamingChatServiceImplTest {
                 knowledgeRetriever,
                 promptBuilder,
                 citationAssembler,
-                emitterFactory);
+                emitterFactory,
+                toolOrchestrationService);
         when(emitterFactory.create(any())).thenReturn(emitter);
         doAnswer(invocation -> {
             Runnable task = invocation.getArgument(0);
@@ -150,6 +158,43 @@ class StreamingChatServiceImplTest {
         verify(messageMapper).updateById(updateCaptor.capture());
         assertThat(updateCaptor.getValue().getStatus()).isEqualTo(AiMessageStatus.SUCCESS);
         assertThat(updateCaptor.getValue().getContent()).isEqualTo("Java 接口定义一组行为规范。");
+    }
+
+    @Test
+    void streamChatShouldSendToolCallEventWhenToolTriggered() {
+        when(userContextService.currentLoginUser()).thenReturn(student());
+        mockConversationInsert(15001L);
+        mockMessageInsert(15100L);
+        when(toolOrchestrationService.planAndExecute(any(), any(), any(), any()))
+                .thenReturn(List.of(ToolCallResult.builder()
+                        .toolName("CourseSearchTool")
+                        .arguments(Map.of("keyword", "Java"))
+                        .success(true)
+                        .resultSummary("找到 1 门已发布课程：Java 入门")
+                        .latencyMs(42L)
+                        .build()));
+        when(toolOrchestrationService.buildToolContext(any())).thenReturn("工具摘要：Java 入门");
+        when(messageMapper.selectPage(any(), any())).thenAnswer(invocation -> {
+            Page<AiMessagePO> page = invocation.getArgument(0);
+            page.setRecords(List.of(userMessage(15101L, 15001L, 4L, "帮我找 Java 入门课程")));
+            return page;
+        });
+        when(aiChatClient.complete(any(ChatCompletionRequest.class)))
+                .thenReturn(new ChatCompletionResult("推荐 Java 入门课程。", "qwen-plus", 20, 10, 30, "stop"));
+
+        ChatRequest request = new ChatRequest();
+        request.setMessage("帮我找 Java 入门课程");
+        streamingService.streamChat(request);
+
+        assertThat(events).extracting(SentEvent::eventName)
+                .containsSubsequence(SseEventName.START, SseEventName.TOOL_CALL, SseEventName.MESSAGE, SseEventName.DONE);
+        StreamToolCallVO toolCall = events.stream()
+                .filter(event -> event.eventName() == SseEventName.TOOL_CALL)
+                .map(event -> (StreamToolCallVO) event.data())
+                .findFirst()
+                .orElseThrow();
+        assertThat(toolCall.getToolName()).isEqualTo("CourseSearchTool");
+        assertThat(toolCall.getResultSummary()).contains("Java 入门");
     }
 
     @Test

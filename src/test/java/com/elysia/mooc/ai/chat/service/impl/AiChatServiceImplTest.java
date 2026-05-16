@@ -22,10 +22,13 @@ import com.elysia.mooc.ai.model.AiChatClient;
 import com.elysia.mooc.ai.model.AiChatProperties;
 import com.elysia.mooc.ai.model.ChatCompletionRequest;
 import com.elysia.mooc.ai.model.ChatCompletionResult;
+import com.elysia.mooc.ai.tool.domain.vo.ToolCallResult;
+import com.elysia.mooc.ai.tool.service.ToolOrchestrationService;
 import com.elysia.mooc.auth.service.UserContextService;
 import com.elysia.mooc.common.exception.BizException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +53,9 @@ class AiChatServiceImplTest {
     @Mock
     private AiChatClient aiChatClient;
 
+    @Mock
+    private ToolOrchestrationService toolOrchestrationService;
+
     private AiChatServiceImpl aiChatService;
     private AiChatProperties properties;
 
@@ -63,12 +69,14 @@ class AiChatServiceImplTest {
                 conversationMapper,
                 messageMapper,
                 properties,
-                aiChatClient);
+                aiChatClient,
+                toolOrchestrationService);
     }
 
     @Test
     void chatShouldCreateConversationAndSaveUserAndAssistantMessages() {
-        when(userContextService.currentUserId()).thenReturn(4L);
+        when(userContextService.currentLoginUser()).thenReturn(new com.elysia.mooc.auth.security.LoginUser(
+                4L, "student", List.of("STUDENT"), List.of("ai:chat")));
         mockConversationInsert(15001L);
         mockMessageInsert();
         when(messageMapper.selectPage(any(), any())).thenAnswer(invocation -> {
@@ -101,8 +109,42 @@ class AiChatServiceImplTest {
     }
 
     @Test
+    void chatShouldReturnToolCallsWhenCourseSearchTriggered() {
+        when(userContextService.currentLoginUser()).thenReturn(new com.elysia.mooc.auth.security.LoginUser(
+                4L, "student", List.of("STUDENT"), List.of("ai:chat")));
+        mockConversationInsert(15001L);
+        mockMessageInsert();
+        when(toolOrchestrationService.planAndExecute(any(), any(), any(), any()))
+                .thenReturn(List.of(ToolCallResult.builder()
+                        .toolName("CourseSearchTool")
+                        .arguments(Map.of("keyword", "Java"))
+                        .success(true)
+                        .result(Map.of("total", 1))
+                        .resultSummary("找到 1 门已发布课程：Java 入门")
+                        .latencyMs(42L)
+                        .build()));
+        when(toolOrchestrationService.buildToolContext(any()))
+                .thenReturn("以下是平台只读工具返回的事实摘要：Java 入门");
+        when(messageMapper.selectPage(any(), any())).thenAnswer(invocation -> {
+            Page<AiMessagePO> page = invocation.getArgument(0);
+            page.setRecords(List.of(userMessage(15101L, 15001L, 4L, "帮我找 Java 入门课程")));
+            return page;
+        });
+        when(aiChatClient.complete(any(ChatCompletionRequest.class)))
+                .thenReturn(new ChatCompletionResult("可以先看 Java 入门课程。", "qwen-plus", 30, 10, 40, "stop"));
+
+        ChatRequest request = new ChatRequest();
+        request.setMessage("帮我找 Java 入门课程");
+        ChatResultVO result = aiChatService.chat(request);
+
+        assertThat(result.getToolCalls()).hasSize(1);
+        assertThat(result.getToolCalls().get(0).getToolName()).isEqualTo("CourseSearchTool");
+        assertThat(result.getToolCalls().get(0).getResultSummary()).contains("Java 入门");
+    }
+
+    @Test
     void chatShouldRejectConversationOfOtherUser() {
-        when(userContextService.currentUserId()).thenReturn(4L);
+        when(userContextService.currentLoginUser()).thenReturn(new com.elysia.mooc.auth.security.LoginUser(4L, "student"));
         AiConversationPO other = conversation(15001L, 5L);
         when(conversationMapper.selectById(15001L)).thenReturn(other);
 
@@ -118,7 +160,7 @@ class AiChatServiceImplTest {
 
     @Test
     void chatShouldSaveFailedAssistantMessageWhenModelFails() {
-        when(userContextService.currentUserId()).thenReturn(4L);
+        when(userContextService.currentLoginUser()).thenReturn(new com.elysia.mooc.auth.security.LoginUser(4L, "student"));
         mockConversationInsert(15001L);
         mockMessageInsert();
         when(messageMapper.selectPage(any(), any())).thenAnswer(invocation -> {

@@ -32,9 +32,12 @@ import com.elysia.mooc.ai.stream.domain.vo.StreamDoneVO;
 import com.elysia.mooc.ai.stream.domain.vo.StreamErrorVO;
 import com.elysia.mooc.ai.stream.domain.vo.StreamMessageVO;
 import com.elysia.mooc.ai.stream.domain.vo.StreamStartVO;
+import com.elysia.mooc.ai.stream.domain.vo.StreamToolCallVO;
 import com.elysia.mooc.ai.stream.service.StreamingChatService;
 import com.elysia.mooc.ai.stream.support.SseEmitterFactory;
 import com.elysia.mooc.ai.stream.support.StreamMessageAccumulator;
+import com.elysia.mooc.ai.tool.domain.vo.ToolCallResult;
+import com.elysia.mooc.ai.tool.service.ToolOrchestrationService;
 import com.elysia.mooc.auth.security.LoginUser;
 import com.elysia.mooc.auth.service.UserContextService;
 import com.elysia.mooc.common.enums.EnableStatus;
@@ -77,6 +80,7 @@ public class StreamingChatServiceImpl implements StreamingChatService {
     private final RagPromptBuilder promptBuilder;
     private final CitationAssembler citationAssembler;
     private final SseEmitterFactory emitterFactory;
+    private final ToolOrchestrationService toolOrchestrationService;
 
     /**
      * 普通聊天流式生成。
@@ -125,12 +129,18 @@ public class StreamingChatServiceImpl implements StreamingChatService {
         try {
             Long userId = loginUser.getUserId();
             conversation = resolveChatConversation(request, userId);
-            saveUserMessage(conversation.getId(), userId, request.getMessage().trim());
+            AiMessagePO userMessage = saveUserMessage(conversation.getId(), userId, request.getMessage().trim());
             assistant = saveAssistantStreamingMessage(conversation.getId(), userId, null);
             runtime.assistantRef().set(assistant);
             sendStart(runtime, conversation.getId(), assistant.getId(), AiConversationScene.CHAT);
+            List<ToolCallResult> toolResults = toolOrchestrationService.planAndExecute(
+                    request.getMessage(),
+                    conversation.getId(),
+                    userMessage.getId(),
+                    loginUser);
+            sendToolCalls(runtime, toolResults);
 
-            ChatCompletionResult result = aiChatClient.complete(buildChatCompletionRequest(conversation.getId()));
+            ChatCompletionResult result = aiChatClient.complete(buildChatCompletionRequest(conversation.getId(), toolResults));
             StreamMessageAccumulator accumulator = sendContent(runtime, result.content());
             updateAssistantSuccess(assistant.getId(), accumulator.content(), result, null);
             touchConversation(conversation.getId(), assistant.getCreateTime(), null, request.getCourseId());
@@ -409,13 +419,17 @@ public class StreamingChatServiceImpl implements StreamingChatService {
         updateAssistantFailed(assistant, assistant.getContent(), "流式连接已断开");
     }
 
-    private ChatCompletionRequest buildChatCompletionRequest(Long conversationId) {
+    private ChatCompletionRequest buildChatCompletionRequest(Long conversationId, List<ToolCallResult> toolResults) {
         List<ChatCompletionMessage> messages = new ArrayList<>();
         if (StringUtils.hasText(chatProperties.getSystemPrompt())) {
             messages.add(new ChatCompletionMessage("system", chatProperties.getSystemPrompt().trim()));
         }
         for (AiMessagePO message : recentSuccessMessages(conversationId)) {
             messages.add(new ChatCompletionMessage(toOpenAiRole(message.getRole()), message.getContent()));
+        }
+        String toolContext = toolOrchestrationService.buildToolContext(toolResults);
+        if (StringUtils.hasText(toolContext)) {
+            messages.add(new ChatCompletionMessage("system", toolContext));
         }
         return new ChatCompletionRequest(chatProperties.getModel(), messages);
     }
@@ -458,6 +472,22 @@ public class StreamingChatServiceImpl implements StreamingChatService {
     private void sendStart(StreamRuntime runtime, Long conversationId, Long messageId, AiConversationScene scene) {
         emitterFactory.send(runtime.emitter(), SseEventName.START,
                 new StreamStartVO(conversationId, messageId, scene.getValue()));
+    }
+
+    private void sendToolCalls(StreamRuntime runtime, List<ToolCallResult> toolResults) {
+        if (toolResults == null || toolResults.isEmpty()) {
+            return;
+        }
+        for (ToolCallResult result : toolResults) {
+            StreamToolCallVO vo = new StreamToolCallVO();
+            vo.setToolName(result.getToolName());
+            vo.setArguments(result.getArguments());
+            vo.setSuccess(Boolean.TRUE.equals(result.getSuccess()));
+            vo.setResultSummary(result.getResultSummary());
+            vo.setLatencyMs(result.getLatencyMs());
+            vo.setErrorMessage(result.getErrorMessage());
+            emitterFactory.send(runtime.emitter(), SseEventName.TOOL_CALL, vo);
+        }
     }
 
     private void sendDone(
