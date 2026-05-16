@@ -8,11 +8,18 @@ import com.elysia.mooc.ai.chat.domain.vo.ConversationDetailVO;
 import com.elysia.mooc.ai.chat.domain.vo.ConversationVO;
 import com.elysia.mooc.ai.chat.domain.vo.MessageVO;
 import com.elysia.mooc.common.utils.BeanCopyUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
 import java.util.List;
+import org.springframework.util.StringUtils;
 
 /** AI 会话和消息 VO 转换支持。 */
 final class AiMessageConvertSupport {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final TypeReference<List<AiSourceVO>> SOURCE_LIST_TYPE = new TypeReference<>() {
+    };
 
     private AiMessageConvertSupport() {
     }
@@ -29,8 +36,20 @@ final class AiMessageConvertSupport {
 
     static MessageVO toMessageVO(AiMessagePO po) {
         return BeanCopyUtils.copyBean(po, MessageVO.class, (source, target) -> {
-            target.setSources(Collections.<AiSourceVO>emptyList());
+            target.setSources(parseSources(source.getCitations()));
             target.setToolCalls(Collections.<AiToolCallVO>emptyList());
         });
+    }
+
+    private static List<AiSourceVO> parseSources(String citations) {
+        if (!StringUtils.hasText(citations)) {
+            return Collections.emptyList();
+        }
+        try {
+            List<AiSourceVO> sources = OBJECT_MAPPER.readValue(citations, SOURCE_LIST_TYPE);
+            return sources == null ? Collections.emptyList() : sources;
+        } catch (Exception ex) {
+            return Collections.emptyList();
+        }
     }
 }

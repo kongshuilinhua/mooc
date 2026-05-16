@@ -21,6 +21,9 @@ public class AiSourceVO {
     /** 切片 ID。 */
     private Long segmentId;
 
+    /** 课程 ID，可为空。 */
+    private Long courseId;
+
     /** 来源标题。 */
     private String title;
 

@@ -60,6 +60,12 @@ mooc:
       timeout-seconds: ${MOOC_AI_TIMEOUT_SECONDS:60}
       history-limit: ${MOOC_AI_CHAT_HISTORY_LIMIT:10}
       system-prompt: ${MOOC_AI_CHAT_SYSTEM_PROMPT:你是 MOOC 学习平台的 AI 助手，请用中文给出准确、简洁、适合学习场景的回答。}
+    rag:
+      default-top-k: ${MOOC_AI_RAG_DEFAULT_TOP_K:5}
+      max-top-k: ${MOOC_AI_RAG_MAX_TOP_K:20}
+      min-score: ${MOOC_AI_RAG_MIN_SCORE:0.35}
+      max-prompt-segments: ${MOOC_AI_RAG_MAX_PROMPT_SEGMENTS:5}
+      max-segment-chars: ${MOOC_AI_RAG_MAX_SEGMENT_CHARS:800}
     embedding:
       provider: ${MOOC_AI_PROVIDER:bailian}
       base-url: ${MOOC_AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}

@@ -109,11 +109,16 @@ public class HttpQdrantClient implements QdrantClient {
         if (!StringUtils.hasText(pointId)) {
             return;
         }
+        Object qdrantPointId = toDeletableQdrantPointId(pointId);
+        if (qdrantPointId == null) {
+            log.info("跳过历史占位 Qdrant point 删除，pointId={}", pointId);
+            return;
+        }
         try {
             restClient.post()
                     .uri("/collections/{collection}/points/delete?wait=true", properties.getCollection())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of("points", List.of(toQdrantPointId(pointId))))
+                    .body(Map.of("points", List.of(qdrantPointId)))
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientResponseException ex) {
@@ -205,6 +210,14 @@ public class HttpQdrantClient implements QdrantClient {
         } catch (NumberFormatException ex) {
             return pointId;
         }
+    }
+
+    private Object toDeletableQdrantPointId(String pointId) {
+        Object qdrantPointId = toQdrantPointId(pointId);
+        if (!(qdrantPointId instanceof String value)) {
+            return qdrantPointId;
+        }
+        return value.startsWith("qdrant-") ? null : value;
     }
 
     private String trimTrailingSlash(String url) {

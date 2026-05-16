@@ -90,4 +90,18 @@ class HttpQdrantClientTest {
         assertThat(results.get(0).getPayload().getSegmentId()).isEqualTo(12201L);
         server.verify();
     }
+
+    @Test
+    void deleteShouldSkipLegacyPlaceholderPointId() {
+        QdrantProperties properties = new QdrantProperties();
+        properties.setUrl("http://qdrant.test");
+        properties.setCollection("mooc_knowledge");
+        RestClient.Builder builder = RestClient.builder().baseUrl(properties.getUrl());
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        HttpQdrantClient client = new HttpQdrantClient(properties, new ObjectMapper(), builder.build());
+
+        client.deletePoint("qdrant-12204");
+
+        server.verify();
+    }
 }
