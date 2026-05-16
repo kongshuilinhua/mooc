@@ -50,6 +50,7 @@ public enum KnowledgeProcessStatus implements BaseEnum<String> {
         return switch (text) {
             case "0" -> PENDING.value;
             case "1" -> PROCESSING.value;
+            case "PARSING" -> PROCESSING.value;
             case "2" -> SUCCESS.value;
             case "3" -> FAILED.value;
             default -> value;

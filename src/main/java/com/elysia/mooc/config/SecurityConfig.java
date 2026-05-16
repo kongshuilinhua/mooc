@@ -79,6 +79,13 @@ public class SecurityConfig {
                                                 .permitAll()
                                                 .requestMatchers("/api/admin/ai/tool-logs")
                                                 .hasAnyAuthority("ROLE_ADMIN", "ai:tool-log:view")
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/api/admin/ai/model-configs",
+                                                                "/api/admin/ai/documents/status",
+                                                                "/api/admin/ai/usage")
+                                                .hasRole("ADMIN")
+                                                .requestMatchers(HttpMethod.PUT, "/api/admin/ai/model-configs/*")
+                                                .hasRole("ADMIN")
                                                 .requestMatchers("/api/admin/ai/**")
                                                 .hasAnyAuthority("ROLE_ADMIN", "ai:kb:manage")
                                                 // 管理端接口先在过滤链做角色拦截，确保普通学生返回 HTTP 403。
