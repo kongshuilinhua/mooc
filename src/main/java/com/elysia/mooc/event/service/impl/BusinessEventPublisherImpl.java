@@ -9,10 +9,12 @@ import com.elysia.mooc.event.domain.payload.CoursePublishedPayload;
 import com.elysia.mooc.event.domain.payload.InteractionAnswerCreatedPayload;
 import com.elysia.mooc.event.domain.payload.LearningBehaviorCreatedPayload;
 import com.elysia.mooc.event.domain.payload.MediaDocumentUploadedPayload;
+import com.elysia.mooc.event.domain.payload.OrderPaidPayload;
 import com.elysia.mooc.event.service.BusinessEventPublisher;
 import com.elysia.mooc.event.service.EventPublisher;
 import com.elysia.mooc.learning.domain.enums.LearningBehaviorType;
 import com.elysia.mooc.media.domain.enums.MediaBizType;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -85,7 +87,22 @@ public class BusinessEventPublisherImpl implements BusinessEventPublisher {
         publish(EventTopicConstants.MEDIA_DOCUMENT_UPLOADED, "media_file:" + mediaFileId, payload);
     }
 
-    private void publish(String topic, String bizKey, Object payload) {
-        eventPublisher.publish(DomainEvent.of(topic, topic, bizKey, payload));
+    @Override
+    public DomainEvent publishTradeOrderPaid(
+            Long orderId,
+            String orderNo,
+            Long userId,
+            Long courseId,
+            BigDecimal payAmount,
+            String payNo,
+            LocalDateTime payTime) {
+        OrderPaidPayload payload = new OrderPaidPayload(orderId, orderNo, userId, courseId, payAmount, payNo, payTime);
+        return publish(EventTopicConstants.TRADE_ORDER_PAID, "order:" + orderNo, payload);
+    }
+
+    private DomainEvent publish(String topic, String bizKey, Object payload) {
+        DomainEvent event = DomainEvent.of(topic, topic, bizKey, payload);
+        eventPublisher.publish(event);
+        return event;
     }
 }

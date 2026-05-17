@@ -2,8 +2,10 @@ package com.elysia.mooc.event.service;
 
 import com.elysia.mooc.course.domain.enums.CourseAuditAction;
 import com.elysia.mooc.course.domain.enums.CourseStatus;
+import com.elysia.mooc.event.domain.DomainEvent;
 import com.elysia.mooc.learning.domain.enums.LearningBehaviorType;
 import com.elysia.mooc.media.domain.enums.MediaBizType;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /** day11.5 业务事件发布门面，避免业务模块直接组装 Kafka 细节。 */
@@ -96,4 +98,25 @@ public interface BusinessEventPublisher {
             String originalName,
             String fileUrl,
             MediaBizType bizType);
+
+    /**
+     * 发布订单支付成功事件。
+     *
+     * @param orderId 订单 ID
+     * @param orderNo 订单号
+     * @param userId 购买用户 ID
+     * @param courseId 课程 ID
+     * @param payAmount 支付金额
+     * @param payNo 支付流水号
+     * @param payTime 支付时间
+     * @return 已发布的领域事件，便于本地消费者立即执行关键权益发放
+     */
+    DomainEvent publishTradeOrderPaid(
+            Long orderId,
+            String orderNo,
+            Long userId,
+            Long courseId,
+            BigDecimal payAmount,
+            String payNo,
+            LocalDateTime payTime);
 }

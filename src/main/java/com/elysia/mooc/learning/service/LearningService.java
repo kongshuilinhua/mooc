@@ -22,6 +22,15 @@ public interface LearningService {
     Boolean joinCourse(JoinCourseRequest request);
 
     /**
+     * 支付成功后发放课程学习权益。
+     *
+     * @param userId 购买用户 ID
+     * @param courseId 课程 ID
+     * @return true 表示权益已存在或本次发放成功
+     */
+    Boolean grantPurchasedCourse(Long userId, Long courseId);
+
+    /**
      * 分页查询我的课程。
      *
      * @param query 查询参数

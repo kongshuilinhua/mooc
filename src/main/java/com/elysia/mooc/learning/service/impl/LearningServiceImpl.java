@@ -107,6 +107,48 @@ public class LearningServiceImpl implements LearningService {
     }
 
     /**
+     * 支付成功后发放课程学习权益。
+     *
+     * @param userId 购买用户 ID
+     * @param courseId 课程 ID
+     * @return true 表示权益已存在或本次发放成功
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean grantPurchasedCourse(Long userId, Long courseId) {
+        if (userId == null || userId <= 0 || courseId == null || courseId <= 0) {
+            throw new BizException(LearningErrorCode.LEARNING_PARAM_INVALID, "支付加课参数不正确");
+        }
+        CoursePO course = courseMapper.selectById(courseId);
+        if (course == null) {
+            throw new BizException(LearningErrorCode.LEARNING_COURSE_NOT_AVAILABLE);
+        }
+        LearningCoursePO existed = getJoinedCourse(userId, course.getId());
+        if (existed != null) {
+            return Boolean.TRUE;
+        }
+
+        // 支付权益可能因为重复回调或事件重放被多次触发，唯一索引用来兜底并发幂等。
+        LearningCoursePO learningCourse = new LearningCoursePO();
+        learningCourse.setUserId(userId);
+        learningCourse.setCourseId(course.getId());
+        learningCourse.setSource(LearningSource.PURCHASE);
+        learningCourse.setProgressPercent(BigDecimal.ZERO);
+        learningCourse.setLearnedSeconds(0);
+        learningCourse.setFinished(LearningFinishedStatus.UNFINISHED);
+        learningCourse.setDeleted(0);
+        try {
+            learningCourseMapper.insert(learningCourse);
+            courseMapper.update(null, Wrappers.<CoursePO>lambdaUpdate()
+                    .eq(CoursePO::getId, course.getId())
+                    .setSql("learn_count = learn_count + 1"));
+        } catch (DuplicateKeyException ignored) {
+            return Boolean.TRUE;
+        }
+        return Boolean.TRUE;
+    }
+
+    /**
      * 分页查询我的课程。
      *
      * @param query 查询参数
