@@ -2,6 +2,8 @@ package com.elysia.mooc.trade.controller;
 
 import com.elysia.mooc.common.api.ApiResult;
 import com.elysia.mooc.common.api.PageResult;
+import com.elysia.mooc.common.audit.AuditLog;
+import com.elysia.mooc.common.idempotent.Idempotent;
 import com.elysia.mooc.trade.domain.dto.CancelOrderRequest;
 import com.elysia.mooc.trade.domain.dto.CreateOrderRequest;
 import com.elysia.mooc.trade.domain.dto.OrderQuery;
@@ -39,6 +41,8 @@ public class OrderController {
     @Operation(summary = "创建订单")
     @PostMapping
     @PreAuthorize("isAuthenticated()")
+    @AuditLog(action = "ORDER_CREATE", targetType = "ORDER", targetId = "#request.courseId")
+    @Idempotent(bizType = "ORDER_CREATE", bizId = "#request.courseId")
     public ApiResult<OrderVO> createOrder(@Valid @RequestBody CreateOrderRequest request) {
         return ApiResult.ok(orderService.createOrder(request));
     }

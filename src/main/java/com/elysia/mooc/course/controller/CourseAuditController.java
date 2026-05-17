@@ -2,6 +2,8 @@ package com.elysia.mooc.course.controller;
 
 import com.elysia.mooc.common.api.ApiResult;
 import com.elysia.mooc.common.api.PageResult;
+import com.elysia.mooc.common.audit.AuditLog;
+import com.elysia.mooc.common.idempotent.Idempotent;
 import com.elysia.mooc.course.domain.dto.AuditCourseRequest;
 import com.elysia.mooc.course.domain.dto.CourseAuditLogQuery;
 import com.elysia.mooc.course.domain.dto.OfflineCourseRequest;
@@ -41,6 +43,7 @@ public class CourseAuditController {
     @Operation(summary = "提交课程审核")
     @PostMapping("/api/courses/{courseId}/submit-audit")
     @PreAuthorize("isAuthenticated()")
+    @Idempotent(bizType = "COURSE_SUBMIT_AUDIT", bizId = "#courseId")
     public ApiResult<Boolean> submitAudit(
             @PathVariable Long courseId,
             @Valid @RequestBody(required = false) SubmitCourseAuditRequest request) {
@@ -57,6 +60,8 @@ public class CourseAuditController {
     @Operation(summary = "审核通过课程")
     @PostMapping("/api/admin/courses/{courseId}/approve")
     @PreAuthorize("hasRole('ADMIN')")
+    @AuditLog(action = "COURSE_APPROVE", targetType = "COURSE", targetId = "#courseId")
+    @Idempotent(bizType = "COURSE_APPROVE", bizId = "#courseId")
     public ApiResult<Boolean> approveCourse(
             @PathVariable Long courseId,
             @Valid @RequestBody(required = false) AuditCourseRequest request) {
@@ -73,6 +78,8 @@ public class CourseAuditController {
     @Operation(summary = "审核驳回课程")
     @PostMapping("/api/admin/courses/{courseId}/reject")
     @PreAuthorize("hasRole('ADMIN')")
+    @AuditLog(action = "COURSE_REJECT", targetType = "COURSE", targetId = "#courseId")
+    @Idempotent(bizType = "COURSE_REJECT", bizId = "#courseId")
     public ApiResult<Boolean> rejectCourse(
             @PathVariable Long courseId,
             @Valid @RequestBody RejectCourseRequest request) {
@@ -89,6 +96,8 @@ public class CourseAuditController {
     @Operation(summary = "下架已发布课程")
     @PostMapping("/api/admin/courses/{courseId}/offline")
     @PreAuthorize("hasRole('ADMIN')")
+    @AuditLog(action = "COURSE_OFFLINE", targetType = "COURSE", targetId = "#courseId")
+    @Idempotent(bizType = "COURSE_OFFLINE", bizId = "#courseId")
     public ApiResult<Boolean> offlineCourse(
             @PathVariable Long courseId,
             @Valid @RequestBody OfflineCourseRequest request) {

@@ -2,6 +2,8 @@ package com.elysia.mooc.media.controller;
 
 import com.elysia.mooc.common.api.ApiResult;
 import com.elysia.mooc.common.api.PageResult;
+import com.elysia.mooc.common.audit.AuditLog;
+import com.elysia.mooc.common.idempotent.Idempotent;
 import com.elysia.mooc.common.validate.ParamChecker;
 import com.elysia.mooc.media.constants.MediaErrorCode;
 import com.elysia.mooc.media.domain.dto.MediaFileQuery;
@@ -92,6 +94,8 @@ public class MediaController {
     @PostMapping("/chunks/merge")
     @PreAuthorize("isAuthenticated()")
     @ParamChecker
+    @AuditLog(action = "MEDIA_CHUNK_MERGE", targetType = "MEDIA_FILE", targetId = "#request.resolvedFileHash()")
+    @Idempotent(bizType = "MEDIA_CHUNK_MERGE", bizId = "#request.resolvedFileHash()")
     public ApiResult<MergeChunksResult> mergeChunks(@Valid @RequestBody MergeChunksRequest request) {
         return ApiResult.ok(mediaFileService.mergeChunks(request));
     }

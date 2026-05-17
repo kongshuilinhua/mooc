@@ -1,6 +1,8 @@
 package com.elysia.mooc.trade.controller;
 
 import com.elysia.mooc.common.api.ApiResult;
+import com.elysia.mooc.common.audit.AuditLog;
+import com.elysia.mooc.common.idempotent.Idempotent;
 import com.elysia.mooc.trade.domain.dto.MockPayRequest;
 import com.elysia.mooc.trade.domain.vo.PayResultVO;
 import com.elysia.mooc.trade.service.PayService;
@@ -34,6 +36,8 @@ public class PayController {
     @Operation(summary = "模拟支付")
     @PostMapping("/{orderId}/pay/mock")
     @PreAuthorize("isAuthenticated()")
+    @AuditLog(action = "ORDER_MOCK_PAY", targetType = "ORDER", targetId = "#orderId")
+    @Idempotent(bizType = "ORDER_MOCK_PAY", bizId = "#orderId")
     public ApiResult<PayResultVO> mockPay(
             @PathVariable Long orderId,
             @Valid @RequestBody(required = false) MockPayRequest request) {

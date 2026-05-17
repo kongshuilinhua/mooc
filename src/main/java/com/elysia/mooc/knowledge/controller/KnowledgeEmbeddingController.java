@@ -1,6 +1,8 @@
 package com.elysia.mooc.knowledge.controller;
 
 import com.elysia.mooc.common.api.ApiResult;
+import com.elysia.mooc.common.audit.AuditLog;
+import com.elysia.mooc.common.idempotent.Idempotent;
 import com.elysia.mooc.knowledge.domain.dto.VectorSearchRequest;
 import com.elysia.mooc.knowledge.domain.vo.VectorSearchResponseVO;
 import com.elysia.mooc.knowledge.service.EmbeddingService;
@@ -37,6 +39,8 @@ public class KnowledgeEmbeddingController {
     @Operation(summary = "重建单个切片向量")
     @PostMapping("/segments/{segmentId}/embedding/rebuild")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('ai:kb:manage')")
+    @AuditLog(action = "SEGMENT_EMBEDDING_REBUILD", targetType = "KNOWLEDGE_SEGMENT", targetId = "#segmentId")
+    @Idempotent(bizType = "SEGMENT_EMBEDDING_REBUILD", bizId = "#segmentId")
     public ApiResult<Boolean> rebuildSegment(@PathVariable Long segmentId) {
         return ApiResult.ok(embeddingService.rebuildSegment(segmentId));
     }
@@ -50,6 +54,8 @@ public class KnowledgeEmbeddingController {
     @Operation(summary = "重建文档全部切片向量")
     @PostMapping("/documents/{documentId}/embedding/rebuild")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('ai:kb:manage')")
+    @AuditLog(action = "DOCUMENT_EMBEDDING_REBUILD", targetType = "KNOWLEDGE_DOCUMENT", targetId = "#documentId")
+    @Idempotent(bizType = "DOCUMENT_EMBEDDING_REBUILD", bizId = "#documentId")
     public ApiResult<Boolean> rebuildDocument(@PathVariable Long documentId) {
         return ApiResult.ok(embeddingService.rebuildDocument(documentId));
     }

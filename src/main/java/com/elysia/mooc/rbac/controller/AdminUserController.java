@@ -2,6 +2,7 @@ package com.elysia.mooc.rbac.controller;
 
 import com.elysia.mooc.common.api.ApiResult;
 import com.elysia.mooc.common.api.PageResult;
+import com.elysia.mooc.common.audit.AuditLog;
 import com.elysia.mooc.common.validate.ParamChecker;
 import com.elysia.mooc.rbac.domain.dto.AssignUserRolesRequest;
 import com.elysia.mooc.rbac.domain.dto.UpdateUserStatusRequest;
@@ -45,6 +46,7 @@ public class AdminUserController {
     @Operation(summary = "修改用户状态")
     @PutMapping("/users/{userId}/status")
     @PreAuthorize("hasRole('ADMIN')")
+    @AuditLog(action = "USER_STATUS_UPDATE", targetType = "USER", targetId = "#userId")
     public ApiResult<AdminUserVO> updateUserStatus(
             @PathVariable Long userId,
             @Valid @RequestBody UpdateUserStatusRequest request) {
@@ -57,6 +59,7 @@ public class AdminUserController {
     @PutMapping("/users/{userId}/roles")
     @PreAuthorize("hasRole('ADMIN')")
     @ParamChecker
+    @AuditLog(action = "USER_ROLE_ASSIGN", targetType = "USER", targetId = "#userId")
     public ApiResult<AdminUserVO> assignUserRoles(
             @PathVariable Long userId,
             @Valid @RequestBody AssignUserRolesRequest request) {

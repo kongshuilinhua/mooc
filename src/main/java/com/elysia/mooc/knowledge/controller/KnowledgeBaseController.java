@@ -2,6 +2,8 @@ package com.elysia.mooc.knowledge.controller;
 
 import com.elysia.mooc.common.api.ApiResult;
 import com.elysia.mooc.common.api.PageResult;
+import com.elysia.mooc.common.audit.AuditLog;
+import com.elysia.mooc.common.idempotent.Idempotent;
 import com.elysia.mooc.knowledge.domain.dto.CreateKnowledgeBaseRequest;
 import com.elysia.mooc.knowledge.domain.dto.KnowledgeBaseQuery;
 import com.elysia.mooc.knowledge.domain.dto.KnowledgeDocumentQuery;
@@ -119,6 +121,8 @@ public class KnowledgeBaseController {
     @Operation(summary = "重建文档索引")
     @PostMapping("/documents/{id}/rebuild")
     @PreAuthorize("hasRole('ADMIN') or hasAuthority('ai:kb:manage')")
+    @AuditLog(action = "KNOWLEDGE_DOCUMENT_REBUILD", targetType = "KNOWLEDGE_DOCUMENT", targetId = "#id")
+    @Idempotent(bizType = "KNOWLEDGE_DOCUMENT_REBUILD", bizId = "#id")
     public ApiResult<Boolean> rebuildDocument(@PathVariable Long id) {
         return ApiResult.ok(knowledgeBaseService.rebuildDocument(id));
     }

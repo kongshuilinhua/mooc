@@ -2,6 +2,7 @@ package com.elysia.mooc.learning.controller;
 
 import com.elysia.mooc.common.api.ApiResult;
 import com.elysia.mooc.common.api.PageResult;
+import com.elysia.mooc.common.idempotent.Idempotent;
 import com.elysia.mooc.common.validate.ParamChecker;
 import com.elysia.mooc.learning.domain.dto.JoinCourseRequest;
 import com.elysia.mooc.learning.domain.dto.LearningCourseQuery;
@@ -43,6 +44,7 @@ public class LearningController {
     @Operation(summary = "加入课程")
     @PostMapping("/courses")
     @PreAuthorize("isAuthenticated()")
+    @Idempotent(bizType = "LEARNING_JOIN", bizId = "#request.courseId")
     public ApiResult<Boolean> joinCourse(@Valid @RequestBody JoinCourseRequest request) {
         return ApiResult.ok(learningService.joinCourse(request));
     }
