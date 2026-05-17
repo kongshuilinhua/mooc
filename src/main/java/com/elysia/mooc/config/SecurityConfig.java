@@ -70,8 +70,11 @@ public class SecurityConfig {
                                                                 "/api/auth/tokens/refresh")
                                                 .permitAll()
                                                 .requestMatchers(HttpMethod.GET,
-                                                                "/api/courses",
-                                                                "/api/courses/*",
+                                                "/api/courses",
+                                                "/api/courses/recommendations",
+                                                "/api/courses/hot",
+                                                "/api/concepts/hot",
+                                                "/api/courses/*",
                                                                 "/api/courses/*/questions",
                                                                 "/api/courses/*/catalog",
                                                                 "/api/course-categories",
